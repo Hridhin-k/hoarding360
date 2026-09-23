@@ -59,7 +59,7 @@ Sidebar footer:
 
 ## 1. Shell
 
-- [ ] Logged-out visit to `/manage` redirects to `/auth/login?next=/manage`.
+- [x] Logged-out visit to `/manage` redirects to `/auth/login?next=/manage`.
 - [ ] Company admin sees sidebar groups Home, Sales, Ops, Compliance, Reports, Admin.
 - [ ] Header shows search, ⌘K, Alerts, and Sign out.
 - [ ] Field technician login is sent from `/manage` to `/field` and never sees the CRM shell.
