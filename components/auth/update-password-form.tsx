@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { PasswordInput } from "@/components/auth/password-input";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 
 export function UpdatePasswordForm() {
   const router = useRouter();
@@ -58,13 +59,9 @@ export function UpdatePasswordForm() {
         />
       </label>
       {error ? <p className="text-sm text-[var(--google-red)]">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {loading ? "Saving…" : "Update password"}
-      </button>
+      <PendingButton type="submit" pending={loading} pendingLabel="Saving…" className={btnPrimary}>
+        Update password
+      </PendingButton>
     </form>
   );
 }

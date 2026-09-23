@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { defaultAppPathForRole } from "@/lib/domain/products";
 import { PasswordInput } from "@/components/auth/password-input";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 
 function safeNext(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
@@ -100,13 +101,9 @@ export function LoginForm() {
         />
       </label>
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-      >
-        {loading ? "Signing in…" : "Sign in"}
-      </button>
+      <PendingButton type="submit" pending={loading} pendingLabel="Signing in…" className={btnPrimary}>
+        Sign in
+      </PendingButton>
       <p className="text-center text-sm text-[var(--muted)]">
         <Link href="/auth/forgot-password" className="text-[var(--primary)] hover:underline">
           Forgot password?

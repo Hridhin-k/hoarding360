@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
@@ -263,9 +264,9 @@ export function ComplianceRecordForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
       >
-        {loading ? "Saving…" : "Save clearance"}
+        {loading ? <Spinner /> : null}{loading ? "Saving…" : "Save clearance"}
       </button>
     </form>
   );

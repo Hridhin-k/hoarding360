@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { marketSection } from "@/components/market/frame";
 import { ListingGallery } from "@/components/market/listing-gallery";
-import { fetchListingBySlug, fetchListingPhotos } from "@/lib/market/listings";
+import { getCachedListingDetail } from "@/lib/market/listings";
 import { formatListingSize, listingAvailabilityTone } from "@/lib/domain/marketplace";
 import { formatInrFromPaise, formatIstDate } from "@/lib/format";
 
@@ -12,9 +12,9 @@ export default async function ListingDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const listing = await fetchListingBySlug(slug);
-  if (!listing) notFound();
-  const photos = await fetchListingPhotos(listing.board_id);
+  const detail = await getCachedListingDetail(slug);
+  if (!detail) notFound();
+  const { listing, photos } = detail;
 
   const tone = listingAvailabilityTone(listing.available_label, listing.occupancy_status);
   const bar =

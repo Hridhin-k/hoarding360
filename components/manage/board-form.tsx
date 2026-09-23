@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
 import {
@@ -574,13 +575,14 @@ export function BoardForm({
 
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
 
-      <button
+      <PendingButton
         type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+        pending={loading}
+        pendingLabel="Saving…"
+        className={btnPrimary}
       >
-        {loading ? "Saving…" : mode === "create" ? "Create board" : "Save changes"}
-      </button>
+        {mode === "create" ? "Create board" : "Save changes"}
+      </PendingButton>
     </form>
   );
 }

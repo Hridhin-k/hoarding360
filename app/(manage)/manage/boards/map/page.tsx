@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { PortfolioMapLibre } from "@/components/manage/portfolio-map-libre";
-import { memberGeoScope } from "@/lib/domain/authz";
+import { getManageSession } from "@/lib/supabase/session";
 
 export default async function BoardsMapPage() {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub as string | undefined;
-  const scope = userId ? await memberGeoScope(userId) : null;
+  const { supabase, role, scopedCities, scopedDistricts } = await getManageSession();
+  const scope =
+    role === "field_supervisor"
+      ? { cities: scopedCities, districts: scopedDistricts }
+      : null;
 
   let boardQuery = supabase
     .from("boards")

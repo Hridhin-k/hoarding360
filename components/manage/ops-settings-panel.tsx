@@ -5,6 +5,7 @@ import {
   saveOpsSettings,
   upsertClearanceType,
 } from "@/app/(manage)/manage/settings/ops-actions";
+import { Spinner } from "@/components/ui/pending-button";
 
 type ClearanceType = {
   id: string;
@@ -35,6 +36,7 @@ export function OpsSettingsPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [acting, setActing] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -70,21 +72,27 @@ export function OpsSettingsPanel({
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
+          onClick={() => {
+            setActing("ops");
             startTransition(async () => {
-              setError(null);
-              setMessage(null);
-              const res = await saveOpsSettings({
-                organizationId,
-                prelistingWindowDays: Number(days),
-                alertEscalateAfterHours: Number(hours),
-              });
-              if (!res.ok) setError(res.error);
-              else setMessage("Ops settings saved.");
-            })
-          }
-          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              try {
+                setError(null);
+                setMessage(null);
+                const res = await saveOpsSettings({
+                  organizationId,
+                  prelistingWindowDays: Number(days),
+                  alertEscalateAfterHours: Number(hours),
+                });
+                if (!res.ok) setError(res.error);
+                else setMessage("Ops settings saved.");
+              } finally {
+                setActing(null);
+              }
+            });
+          }}
+          className="inline-flex items-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {acting === "ops" ? <Spinner /> : null}
           Save ops settings
         </button>
       </section>
@@ -131,27 +139,33 @@ export function OpsSettingsPanel({
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
+          onClick={() => {
+            setActing("type");
             startTransition(async () => {
-              setError(null);
-              setMessage(null);
-              const res = await upsertClearanceType({
-                organizationId,
-                code,
-                label,
-                isMandatoryDefault: mandatory,
-                active: true,
-              });
-              if (!res.ok) setError(res.error);
-              else {
-                setMessage("Clearance type added.");
-                setCode("");
-                setLabel("");
+              try {
+                setError(null);
+                setMessage(null);
+                const res = await upsertClearanceType({
+                  organizationId,
+                  code,
+                  label,
+                  isMandatoryDefault: mandatory,
+                  active: true,
+                });
+                if (!res.ok) setError(res.error);
+                else {
+                  setMessage("Clearance type added.");
+                  setCode("");
+                  setLabel("");
+                }
+              } finally {
+                setActing(null);
               }
-            })
-          }
-          className="rounded-md border border-[var(--border)] px-4 py-2 text-sm"
+            });
+          }}
+          className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {acting === "type" ? <Spinner /> : null}
           Add type
         </button>
       </section>

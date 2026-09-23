@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import {
   grantPublishOverride,
@@ -67,9 +68,9 @@ export function PublishOverrideForm({
                 else router.refresh();
               })
             }
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm hover:bg-[var(--surface)] disabled:opacity-60"
           >
-            {pending ? "Revoking…" : "Revoke override"}
+            {pending ? <Spinner /> : null}{pending ? "Revoking…" : "Revoke override"}
           </button>
         </div>
       ) : (
@@ -103,9 +104,9 @@ export function PublishOverrideForm({
                 else router.refresh();
               })
             }
-            className="rounded-md bg-[var(--google-yellow)] px-4 py-2 text-sm font-medium text-[var(--ink)] disabled:opacity-60 sm:col-span-2"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--google-yellow)] px-4 py-2 text-sm font-medium text-[var(--ink)] hover:opacity-90 disabled:opacity-60 sm:col-span-2"
           >
-            {pending ? "Granting…" : "Grant temporary re-publish"}
+            {pending ? <Spinner /> : null}{pending ? "Granting…" : "Grant temporary re-publish"}
           </button>
         </div>
       )}

@@ -1,25 +1,9 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ClientForm } from "@/components/manage/client-form";
-import { createClient } from "@/lib/supabase/server";
-
-async function requireOrgId() {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId ?? "")
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (!membership?.organization_id) redirect("/manage");
-  return { supabase, organizationId: membership.organization_id };
-}
+import { requireManageSession } from "@/lib/supabase/session";
 
 export default async function NewClientPage() {
-  const { organizationId } = await requireOrgId();
+  const { orgId: organizationId } = await requireManageSession("/manage/clients/new");
 
   return (
     <div className="mx-auto max-w-lg space-y-6">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -54,13 +55,9 @@ export function ForgotPasswordForm() {
         />
       </label>
       {error ? <p className="text-sm text-[var(--google-red)]">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {loading ? "Sending…" : "Send reset link"}
-      </button>
+      <PendingButton type="submit" pending={loading} pendingLabel="Sending…" className={btnPrimary}>
+        Send reset link
+      </PendingButton>
     </form>
   );
 }

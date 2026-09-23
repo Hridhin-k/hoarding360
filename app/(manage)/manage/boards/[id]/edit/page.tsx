@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { BoardForm } from "@/components/manage/board-form";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import { emptyFace, type BoardFormValues } from "@/lib/domain/board";
 import { canSeeFloorRates } from "@/lib/domain/roles";
-import type { LifecycleStatus, OrgRole } from "@/lib/domain/status";
+import type { LifecycleStatus } from "@/lib/domain/status";
 
 export default async function EditBoardPage({
   params,
@@ -12,20 +12,8 @@ export default async function EditBoardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id, role")
-    .eq("user_id", userId ?? "")
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
-  const showFloor = canSeeFloorRates(membership.role as OrgRole);
+  const { supabase, orgId, role } = await requireManageSession(`/manage/boards/${id}/edit`);
+  const showFloor = canSeeFloorRates(role);
 
   const { data: board } = await supabase
     .from("boards")
@@ -100,7 +88,7 @@ export default async function EditBoardPage({
         <p className="text-sm text-[var(--muted)]">{board.board_code}</p>
       </div>
       <BoardForm
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         mode="edit"
         boardId={id}
         initial={initial}

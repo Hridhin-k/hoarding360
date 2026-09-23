@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import { BoardImportWizard } from "@/components/manage/board-import-wizard";
 import { EntityImportWizard } from "@/components/manage/entity-import-wizard";
 import { BulkPhotoImport } from "@/components/manage/bulk-photo-import";
@@ -23,26 +22,14 @@ export default async function ImportPage({
   const sp = await searchParams;
   const kind = TABS.some((t) => t.key === sp.kind) ? sp.kind! : "boards";
 
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId ?? "")
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
+  const { supabase, orgId } = await requireManageSession("/manage/import");
 
   const { data: jobs } =
     kind === "history"
       ? await supabase
           .from("import_jobs")
           .select("id, entity_kind, status, summary, created_at, finished_at")
-          .eq("organization_id", membership.organization_id)
+          .eq("organization_id", orgId)
           .order("created_at", { ascending: false })
           .limit(50)
       : { data: null };
@@ -78,16 +65,16 @@ export default async function ImportPage({
       </div>
 
       {kind === "boards" ? (
-        <BoardImportWizard organizationId={membership.organization_id} />
+        <BoardImportWizard organizationId={orgId} />
       ) : null}
       {kind === "clients" || kind === "agreements" || kind === "permits" ? (
         <EntityImportWizard
-          organizationId={membership.organization_id}
+          organizationId={orgId}
           kind={kind}
         />
       ) : null}
       {kind === "photos" ? (
-        <BulkPhotoImport organizationId={membership.organization_id} />
+        <BulkPhotoImport organizationId={orgId} />
       ) : null}
       {kind === "history" ? (
         <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-white">

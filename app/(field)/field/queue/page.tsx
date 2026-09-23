@@ -7,6 +7,7 @@ import {
   listPendingProofs,
 } from "@/lib/field/offline-queue";
 import { syncOfflineQueue } from "@/lib/field/sync";
+import { Spinner } from "@/components/ui/pending-button";
 
 export default function FieldQueuePage() {
   const [proofs, setProofs] = useState<PendingProof[]>([]);
@@ -62,8 +63,9 @@ export default function FieldQueuePage() {
           type="button"
           disabled={!online || syncing || (!proofs.length && !incidents.length)}
           onClick={() => void onSync()}
-          className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          {syncing ? <Spinner /> : null}
           {syncing ? "Syncing…" : "Sync"}
         </button>
       </div>

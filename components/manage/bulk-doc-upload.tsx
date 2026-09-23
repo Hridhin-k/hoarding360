@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { classifyDocFromFilename, DOCUMENT_TYPES } from "@/lib/domain/documents";
 import { logActivity } from "@/lib/domain/activity";
+import { Spinner } from "@/components/ui/pending-button";
 
 type Props = {
   organizationId: string;
@@ -122,6 +123,12 @@ export function BulkDocUpload({ organizationId, boards }: Props) {
         }}
         className="block w-full text-sm"
       />
+      {pending ? (
+        <p className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+          <Spinner />
+          Uploading…
+        </p>
+      ) : null}
       {error ? <p className="text-sm text-[var(--google-red)]">{error}</p> : null}
       {message ? <p className="text-sm text-[var(--google-green)]">{message}</p> : null}
     </section>

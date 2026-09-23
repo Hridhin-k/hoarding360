@@ -8,6 +8,7 @@ import {
 } from "@/app/(manage)/manage/settings/team-actions";
 import { saveMemberGeoScope } from "@/app/(manage)/manage/settings/ops-actions";
 import { ORG_ROLES, type OrgRole } from "@/lib/domain/status";
+import { Spinner } from "@/components/ui/pending-button";
 
 const inputClass =
   "rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--primary)]";
@@ -36,6 +37,18 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [acting, setActing] = useState<string | null>(null);
+
+  function run(key: string, work: () => Promise<void>) {
+    setActing(key);
+    startTransition(async () => {
+      try {
+        await work();
+      } finally {
+        setActing(null);
+      }
+    });
+  }
   const [geoDraft, setGeoDraft] = useState<Record<string, { cities: string; districts: string }>>(
     {},
   );
@@ -43,7 +56,7 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
   function onInvite() {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
+    run("invite", async () => {
       const res = await inviteTeamMember({
         organizationId,
         email,
@@ -97,8 +110,9 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
           type="button"
           disabled={pending || !email}
           onClick={onInvite}
-          className="rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {acting === "invite" ? <Spinner className="size-3.5" /> : null}
           Invite
         </button>
       </div>
@@ -129,7 +143,7 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
                     value={m.role}
                     disabled={pending || Boolean(m.deactivated_at)}
                     onChange={(e) =>
-                      startTransition(async () => {
+                      run(`role:${m.id}`, async () => {
                         await updateMemberRole({
                           organizationId,
                           memberId: m.id,
@@ -145,11 +159,12 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
                       </option>
                     ))}
                   </select>
+                  {acting === `role:${m.id}` ? <Spinner className="size-3.5 text-[var(--muted)]" /> : null}
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() =>
-                      startTransition(async () => {
+                      run(`active:${m.id}`, async () => {
                         await setMemberActive({
                           organizationId,
                           memberId: m.id,
@@ -157,8 +172,9 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
                         });
                       })
                     }
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-xs hover:bg-[var(--wash)]"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-2 text-xs hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {acting === `active:${m.id}` ? <Spinner className="size-3" /> : null}
                     {m.deactivated_at ? "Reactivate" : "Deactivate"}
                   </button>
                 </div>
@@ -191,7 +207,7 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
                     type="button"
                     disabled={pending}
                     onClick={() =>
-                      startTransition(async () => {
+                      run(`geo:${m.id}`, async () => {
                         const cities = draft.cities
                           .split(",")
                           .map((s) => s.trim())
@@ -209,8 +225,9 @@ export function TeamMembersPanel({ organizationId, members, invites }: Props) {
                         else setMessage("Geo scope saved.");
                       })
                     }
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-xs"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-white px-3 py-2 text-xs hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {acting === `geo:${m.id}` ? <Spinner className="size-3" /> : null}
                     Save scope
                   </button>
                 </div>

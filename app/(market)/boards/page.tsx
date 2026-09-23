@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { marketSection } from "@/components/market/frame";
 import { MarketListingCard } from "@/components/market/listing-card";
-import { fetchListedMarketplace } from "@/lib/market/listings";
+import { getCachedBoardListings } from "@/lib/market/listings";
 
 export default async function BoardsBrowsePage({
   searchParams,
@@ -9,7 +9,7 @@ export default async function BoardsBrowsePage({
   searchParams: Promise<{ city?: string }>;
 }) {
   const { city } = await searchParams;
-  const listings = await fetchListedMarketplace({ city: city || undefined });
+  const listings = await getCachedBoardListings(city || undefined);
 
   const cities = [
     ...new Set(listings.map((l) => l.city).filter(Boolean) as string[]),

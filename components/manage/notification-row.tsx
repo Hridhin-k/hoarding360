@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markNotificationRead } from "@/app/(manage)/manage/notifications/actions";
 import { kindLabel, priorityTone, type AppNotification } from "@/lib/domain/notifications";
+import { Spinner } from "@/components/ui/pending-button";
 
 type Props = {
   notification: AppNotification;
@@ -33,8 +34,10 @@ export function NotificationRow({ notification: n }: Props) {
         type="button"
         onClick={onOpen}
         disabled={pending}
-        className="min-w-0 flex-1 text-left disabled:opacity-60"
+        className="inline-flex min-w-0 flex-1 items-start gap-2 text-left hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
       >
+        {pending ? <Spinner className="mt-1 size-3.5 shrink-0 text-[var(--muted)]" /> : null}
+        <span className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           {unread ? (
             <span
@@ -57,6 +60,7 @@ export function NotificationRow({ notification: n }: Props) {
         </div>
         <p className="mt-1 font-medium text-[var(--ink)]">{n.title}</p>
         {n.body ? <p className="mt-0.5 text-sm text-[var(--muted)]">{n.body}</p> : null}
+        </span>
       </button>
       {n.href ? (
         <Link

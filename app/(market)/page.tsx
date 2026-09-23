@@ -2,8 +2,11 @@ import Link from "next/link";
 import { marketSection } from "@/components/market/frame";
 import { MarketListingCard } from "@/components/market/listing-card";
 import { listingAvailabilityTone } from "@/lib/domain/marketplace";
-import { fetchListedMarketplace } from "@/lib/market/listings";
+import { getCachedMarketHome } from "@/lib/market/listings";
 import { PRODUCTS } from "@/lib/domain/products";
+
+/** Refresh public covers before their one-hour signed URLs expire. */
+export const revalidate = 300;
 
 const highlights = [
   {
@@ -30,8 +33,7 @@ const highlights = [
 ];
 
 export default async function MarketHomePage() {
-  const listings = await fetchListedMarketplace({ limit: 48 });
-  const preview = listings.slice(0, 8);
+  const { rows: listings, preview } = await getCachedMarketHome();
   const counts = {
     available: listings.filter(
       (l) => listingAvailabilityTone(l.available_label, l.occupancy_status) === "available",

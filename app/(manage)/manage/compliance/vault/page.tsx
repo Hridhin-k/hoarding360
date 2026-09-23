@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import { documentTypeLabel } from "@/lib/domain/documents";
 import { formatIstDate } from "@/lib/format";
 import { BulkDocUpload } from "@/components/manage/bulk-doc-upload";
@@ -12,19 +11,7 @@ export default async function ComplianceVaultPage({
   searchParams: Promise<{ q?: string; type?: string; expiring?: string }>;
 }) {
   const sp = await searchParams;
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub as string | undefined;
-  if (!userId) redirect("/auth/login?next=/manage/compliance/vault");
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (!membership?.organization_id) redirect("/manage");
+  const { supabase, orgId } = await requireManageSession("/manage/compliance/vault");
 
   let query = supabase
     .from("documents")
@@ -50,7 +37,7 @@ export default async function ComplianceVaultPage({
     supabase
       .from("boards")
       .select("id, board_code, name")
-      .eq("organization_id", membership.organization_id)
+      .eq("organization_id", orgId)
       .is("deleted_at", null)
       .order("board_code")
       .limit(200),
@@ -66,14 +53,7 @@ export default async function ComplianceVaultPage({
     );
   });
 
-  const withUrls = await Promise.all(
-    filtered.slice(0, 80).map(async (d) => {
-      const { data: signed } = await supabase.storage
-        .from("org-documents")
-        .createSignedUrl(d.storage_path, 60 * 60);
-      return { ...d, signedUrl: signed?.signedUrl ?? null };
-    }),
-  );
+  const listed = filtered.slice(0, 80);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -88,7 +68,7 @@ export default async function ComplianceVaultPage({
       </div>
 
       <BulkDocUpload
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         boards={boards ?? []}
       />
 
@@ -136,7 +116,7 @@ export default async function ComplianceVaultPage({
       </form>
 
       <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-white">
-        {withUrls.map((d) => (
+        {listed.map((d) => (
           <li
             key={d.id}
             className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
@@ -152,19 +132,15 @@ export default async function ComplianceVaultPage({
                 {` · ${d.entity_type}`}
               </p>
             </div>
-            {d.signedUrl ? (
-              <a
-                href={d.signedUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-[var(--primary)] underline"
-              >
-                Open
-              </a>
-            ) : null}
+            <a
+              href={`/manage/compliance/vault/open?id=${d.id}`}
+              className="text-xs text-[var(--primary)] underline"
+            >
+              Open
+            </a>
           </li>
         ))}
-        {!withUrls.length ? (
+        {!listed.length ? (
           <li className="px-4 py-8 text-center text-sm text-[var(--muted)]">
             No documents match
           </li>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { saveDigestPrefs } from "@/app/(manage)/manage/notifications/prefs-actions";
 
 export type DigestPrefs = {
@@ -146,9 +147,9 @@ export function DigestPrefsForm({ organizationId, initial }: Props) {
             else setMessage("Preferences saved.");
           })
         }
-        className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "Saving…" : "Save my preferences"}
+        {pending ? <Spinner /> : null}{pending ? "Saving…" : "Save my preferences"}
       </button>
     </div>
   );

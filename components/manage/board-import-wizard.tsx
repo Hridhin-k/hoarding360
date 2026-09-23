@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import { applyBoardImport } from "@/app/(manage)/manage/import/actions";
 import {
   BOARD_IMPORT_HEADERS,
@@ -33,6 +33,7 @@ function isSpreadsheet(file: File): boolean {
 
 async function fileToMatrix(file: File): Promise<string[][]> {
   if (isSpreadsheet(file)) {
+    const XLSX = await import("xlsx");
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
     const sheetName = wb.SheetNames[0];
@@ -270,9 +271,9 @@ export function BoardImportWizard({ organizationId }: Props) {
                 type="button"
                 disabled={loading || stats.ok === 0}
                 onClick={() => void onConfirm()}
-                className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
               >
-                {loading ? "Importing…" : `Import ${stats.ok} valid rows`}
+                {loading ? <Spinner /> : null}{loading ? "Importing…" : `Import ${stats.ok} valid rows`}
               </button>
             </div>
           </div>

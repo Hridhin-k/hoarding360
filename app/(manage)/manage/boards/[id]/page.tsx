@@ -11,12 +11,12 @@ import { FaceRateHistory } from "@/components/manage/face-rate-history";
 import { ProofShareButton } from "@/components/manage/proof-share-button";
 import { ComplianceRecordForm } from "@/components/manage/compliance-record-form";
 import { ComplianceRecordsList } from "@/components/manage/compliance-records-list";
-import { createClient } from "@/lib/supabase/server";
+import { getManageSession } from "@/lib/supabase/session";
 import type { ActivityEvent } from "@/lib/domain/activity";
 import { ThreeStatusBadges, worstOccupancy } from "@/components/manage/status-badges";
 import { canSeeCosts, canSeeFloorRates } from "@/lib/domain/roles";
 import type { VaultDocument } from "@/lib/domain/documents";
-import type { ComplianceStatus, OccupancyStatus, OrgRole } from "@/lib/domain/status";
+import type { ComplianceStatus, OccupancyStatus } from "@/lib/domain/status";
 import { formatInrFromPaise, formatIstDate } from "@/lib/format";
 import { PROOF_GEO_RADIUS_M } from "@/lib/domain/field";
 
@@ -47,19 +47,7 @@ export default async function Board360Page({
   const { id } = await params;
   const { tab: tabParam } = await searchParams;
 
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  const { data: membership } = userId
-    ? await supabase
-        .from("organization_members")
-        .select("role")
-        .eq("user_id", userId)
-        .is("deactivated_at", null)
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
-  const role = (membership?.role as OrgRole | undefined) ?? null;
+  const { supabase, role } = await getManageSession();
   const showFinanceTabs = canSeeCosts(role);
   const showFloor = canSeeFloorRates(role);
   const TABS = ALL_TABS.filter((t) => !t.financeOnly || showFinanceTabs);
@@ -76,152 +64,186 @@ export default async function Board360Page({
 
   if (!board) notFound();
 
-  const { data: orgClearanceTypes } = await supabase
-    .from("organization_clearance_types")
-    .select("code, label, is_mandatory_default")
-    .eq("organization_id", board.organization_id)
-    .eq("active", true)
-    .order("sort_order");
-
-  const { data: faces } = await supabase
-    .from("board_faces")
-    .select(
-      "id, face_label, width_ft, height_ft, area_sqft, illumination, card_rate_paise, occupancy_status, facing_direction, available_from, is_publishable, price_on_request, market_title, market_blurb",
-    )
-    .eq("board_id", id)
-    .is("deleted_at", null)
-    .order("face_label");
-
-  const { data: photoRows } = await supabase
-    .from("board_photos")
-    .select("id, kind, storage_path, captured_at, is_cover")
-    .eq("board_id", id)
-    .is("deleted_at", null)
-    .order("captured_at", { ascending: false });
-
-  const photos = await Promise.all(
-    (photoRows ?? []).map(async (p) => {
-      const { data: signed } = await supabase.storage
-        .from("board-images")
-        .createSignedUrl(p.storage_path, 60 * 60);
-      return { ...p, signedUrl: signed?.signedUrl ?? null };
-    }),
-  );
-
-  const { data: complianceRows } = await supabase
-    .from("compliance_records")
-    .select(
-      "id, clearance_type, governing_body, reference_no, issue_date, expiry_date, status, is_mandatory, under_renewal, fee_paid_paise, renewal_cycle_months",
-    )
-    .eq("board_id", id)
-    .is("deleted_at", null)
-    .order("expiry_date", { ascending: true, nullsFirst: true });
-
-  const { data: rollup } = await supabase.rpc("board_compliance_rollup", {
-    p_board_id: id,
-  });
+  const [{ data: faces }, { data: rollup }] = await Promise.all([
+    supabase
+      .from("board_faces")
+      .select(
+        "id, face_label, width_ft, height_ft, area_sqft, illumination, card_rate_paise, occupancy_status, facing_direction, available_from, is_publishable, price_on_request, market_title, market_blurb",
+      )
+      .eq("board_id", id)
+      .is("deleted_at", null)
+      .order("face_label"),
+    supabase.rpc("board_compliance_rollup", { p_board_id: id }),
+  ]);
 
   const faceIds = (faces ?? []).map((f) => f.id);
-
-  const { data: occupancyRows } = faceIds.length
-    ? await supabase
-        .from("occupancy_periods")
-        .select(
-          "id, face_id, status, starts_on, ends_on, agreement_id, block_reason, agreements(ref_code, clients(name))",
-        )
-        .in("face_id", faceIds)
-        .order("starts_on", { ascending: false })
-    : { data: [] as never[] };
-
-  const { data: boardAgreements } = faceIds.length
-    ? await supabase
-        .from("agreement_faces")
-        .select(
-          "id, face_id, starts_on, ends_on, rate_paise, board_faces(face_label), agreements(id, ref_code, status, clients(name))",
-        )
-        .in("face_id", faceIds)
-        .is("deleted_at", null)
-        .order("starts_on", { ascending: false })
-    : { data: [] as never[] };
-
-  const { data: activityRows } = await supabase
-    .from("activity_events")
-    .select(
-      "id, organization_id, actor_id, entity_type, entity_id, event_type, board_id, from_value, to_value, reason, occurred_at",
-    )
-    .eq("board_id", id)
-    .order("occurred_at", { ascending: false })
-    .limit(50);
-
-  const activityEvents = (activityRows ?? []) as ActivityEvent[];
-
-  const { data: docRows } = await supabase
-    .from("documents")
-    .select(
-      "id, doc_type, file_name, storage_path, mime_type, byte_size, reference_no, issue_date, expiry_date, created_at",
-    )
-    .eq("entity_type", "board")
-    .eq("entity_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
-  const documents: VaultDocument[] = await Promise.all(
-    (docRows ?? []).map(async (d) => {
-      const { data: signed } = await supabase.storage
-        .from("org-documents")
-        .createSignedUrl(d.storage_path, 60 * 60);
-      return { ...d, signedUrl: signed?.signedUrl ?? null };
-    }),
-  );
-
-  const { data: proofRows } = await supabase
-    .from("proof_of_display")
-    .select("id, captured_at, geo_ok, distance_m, notes, lat, lng")
-    .eq("board_id", id)
-    .is("deleted_at", null)
-    .order("captured_at", { ascending: false })
-    .limit(30);
-
-  const { data: incidentRows } = await supabase
-    .from("incidents")
-    .select("id, title, status, severity, category, created_at, description")
-    .eq("board_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  const faceIdsForRates = (faces ?? []).map((f) => f.id);
-  const { data: rateHistoryRows } = faceIdsForRates.length
-    ? await supabase
-        .from("face_rate_history")
-        .select(
-          "id, face_id, card_rate_paise, floor_rate_paise, printing_charge_paise, mounting_charge_paise, reason, occurred_at",
-        )
-        .in("face_id", faceIdsForRates)
-        .order("occurred_at", { ascending: false })
-        .limit(100)
-    : { data: [] as never[] };
-
   const faceLabelById = new Map((faces ?? []).map((f) => [f.id, f.face_label]));
 
-  const { data: marketSettings } = await supabase
-    .from("organization_marketplace_settings")
-    .select(
-      "marketplace_enabled, public_display_name, default_price_on_request, accept_enquiries",
-    )
-    .eq("organization_id", board.organization_id)
-    .maybeSingle();
+  const [
+    clearanceRes,
+    complianceRes,
+    photoRes,
+    photoCountRes,
+    occupancyRes,
+    agreementRes,
+    activityRes,
+    docRes,
+    proofRes,
+    incidentRes,
+    rateRes,
+    marketRes,
+    listingRes,
+  ] = await Promise.all([
+    tab === "compliance"
+      ? supabase
+          .from("organization_clearance_types")
+          .select("code, label, is_mandatory_default")
+          .eq("organization_id", board.organization_id)
+          .eq("active", true)
+          .order("sort_order")
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "compliance"
+      ? supabase
+          .from("compliance_records")
+          .select(
+            "id, clearance_type, governing_body, reference_no, issue_date, expiry_date, status, is_mandatory, under_renewal, fee_paid_paise, renewal_cycle_months",
+          )
+          .eq("board_id", id)
+          .is("deleted_at", null)
+          .order("expiry_date", { ascending: true, nullsFirst: true })
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "gallery"
+      ? supabase
+          .from("board_photos")
+          .select("id, kind, storage_path, captured_at, is_cover")
+          .eq("board_id", id)
+          .is("deleted_at", null)
+          .order("captured_at", { ascending: false })
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "marketplace"
+      ? supabase
+          .from("board_photos")
+          .select("id", { count: "exact", head: true })
+          .eq("board_id", id)
+          .is("deleted_at", null)
+      : Promise.resolve({ count: 0 }),
+    tab === "occupancy" && faceIds.length
+      ? supabase
+          .from("occupancy_periods")
+          .select(
+            "id, face_id, status, starts_on, ends_on, agreement_id, block_reason, agreements(ref_code, clients(name))",
+          )
+          .in("face_id", faceIds)
+          .order("starts_on", { ascending: false })
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "agreements" && faceIds.length
+      ? supabase
+          .from("agreement_faces")
+          .select(
+            "id, face_id, starts_on, ends_on, rate_paise, board_faces(face_label), agreements(id, ref_code, status, clients(name))",
+          )
+          .in("face_id", faceIds)
+          .is("deleted_at", null)
+          .order("starts_on", { ascending: false })
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "activity"
+      ? supabase
+          .from("activity_events")
+          .select(
+            "id, organization_id, actor_id, entity_type, entity_id, event_type, board_id, from_value, to_value, reason, occurred_at",
+          )
+          .eq("board_id", id)
+          .order("occurred_at", { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: [] as ActivityEvent[] }),
+    tab === "documents"
+      ? supabase
+          .from("documents")
+          .select(
+            "id, doc_type, file_name, storage_path, mime_type, byte_size, reference_no, issue_date, expiry_date, created_at",
+          )
+          .eq("entity_type", "board")
+          .eq("entity_id", id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "proof"
+      ? supabase
+          .from("proof_of_display")
+          .select("id, captured_at, geo_ok, distance_m, notes, lat, lng")
+          .eq("board_id", id)
+          .is("deleted_at", null)
+          .order("captured_at", { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "incidents"
+      ? supabase
+          .from("incidents")
+          .select("id, title, status, severity, category, created_at, description")
+          .eq("board_id", id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "rates" && faceIds.length
+      ? supabase
+          .from("face_rate_history")
+          .select(
+            "id, face_id, card_rate_paise, floor_rate_paise, printing_charge_paise, mounting_charge_paise, reason, occurred_at",
+          )
+          .in("face_id", faceIds)
+          .order("occurred_at", { ascending: false })
+          .limit(100)
+      : Promise.resolve({ data: [] as never[] }),
+    tab === "marketplace"
+      ? supabase
+          .from("organization_marketplace_settings")
+          .select(
+            "marketplace_enabled, public_display_name, default_price_on_request, accept_enquiries",
+          )
+          .eq("organization_id", board.organization_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    tab === "marketplace" && faceIds.length
+      ? supabase
+          .from("marketplace_listings")
+          .select("face_id, is_listed")
+          .in("face_id", faceIds)
+      : Promise.resolve({ data: [] as { face_id: string; is_listed: boolean }[] }),
+  ]);
 
-  const { data: listingRows } = faceIds.length
-    ? await supabase
-        .from("marketplace_listings")
-        .select("face_id, is_listed")
-        .in("face_id", faceIds)
-    : { data: [] as { face_id: string; is_listed: boolean }[] };
-
-  const listedMap = new Map(
-    (listingRows ?? []).map((r) => [r.face_id, r.is_listed]),
+  const photoUrls = await signStoragePaths(
+    supabase,
+    "board-images",
+    (photoRes.data ?? []).map((p) => p.storage_path),
+    { width: 1200, resize: "contain", quality: 70 },
   );
+  const photos = (photoRes.data ?? []).map((p) => ({
+    ...p,
+    signedUrl: photoUrls.get(p.storage_path) ?? null,
+  }));
+  const photoCount = tab === "gallery" ? photos.length : (photoCountRes.count ?? 0);
+
+  const docUrls = await signStoragePaths(
+    supabase,
+    "org-documents",
+    (docRes.data ?? []).map((d) => d.storage_path),
+  );
+  const documents: VaultDocument[] = (docRes.data ?? []).map((d) => ({
+    ...d,
+    signedUrl: docUrls.get(d.storage_path) ?? null,
+  }));
+
+  const orgClearanceTypes = clearanceRes.data;
+  const complianceRows = complianceRes.data;
+  const occupancyRows = occupancyRes.data;
+  const boardAgreements = agreementRes.data;
+  const activityEvents = (activityRes.data ?? []) as ActivityEvent[];
+  const proofRows = proofRes.data;
+  const incidentRows = incidentRes.data;
+  const rateHistoryRows = rateRes.data;
+  const marketSettings = marketRes.data;
+  const listedMap = new Map((listingRes.data ?? []).map((r) => [r.face_id, r.is_listed]));
 
   const complianceStatus = (rollup as ComplianceStatus | null) ?? "missing";
   const boardOccupancy = worstOccupancy(
@@ -235,7 +257,7 @@ export default async function Board360Page({
   if (board.lat == null || board.lng == null) {
     marketBlockers.push("Add GPS coordinates.");
   }
-  if (!photos.length) {
+  if (!photoCount) {
     marketBlockers.push("Optional: upload a photo (listings work without it in preview).");
   }
   if (complianceStatus === "expired") {
@@ -687,6 +709,27 @@ export default async function Board360Page({
       ) : null}
     </div>
   );
+}
+
+async function signStoragePaths(
+  supabase: Awaited<ReturnType<typeof getManageSession>>["supabase"],
+  bucket: "board-images" | "org-documents",
+  paths: string[],
+  transform?: { width: number; resize: "contain" | "cover"; quality: number },
+) {
+  const unique = [...new Set(paths.filter(Boolean))];
+  const urls = new Map<string, string>();
+  await Promise.all(
+    unique.map(async (path) => {
+      const { data } = await supabase.storage.from(bucket).createSignedUrl(
+        path,
+        60 * 60,
+        transform ? { transform } : undefined,
+      );
+      if (data?.signedUrl) urls.set(path, data.signedUrl);
+    }),
+  );
+  return urls;
 }
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {

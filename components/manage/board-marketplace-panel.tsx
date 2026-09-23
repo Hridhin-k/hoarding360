@@ -5,6 +5,7 @@ import {
   saveMarketplaceOrgSettings,
   setFacePublishableAction,
 } from "@/app/(manage)/manage/marketplace/actions";
+import { Spinner } from "@/components/ui/pending-button";
 
 type FaceRow = {
   id: string;
@@ -50,44 +51,55 @@ export function BoardMarketplacePanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [acting, setActing] = useState<string | null>(null);
 
   function saveOrg() {
     setError(null);
     setMessage(null);
+    setActing("org");
     startTransition(async () => {
-      const res = await saveMarketplaceOrgSettings({
-        organizationId,
-        marketplaceEnabled: enabled,
-        publicDisplayName: displayName,
-        defaultPriceOnRequest: defaultPor,
-        acceptEnquiries: accept,
-      });
-      if (!res.ok) setError(res.error);
-      else setMessage("Organisation marketplace settings saved. Projection refreshed.");
+      try {
+        const res = await saveMarketplaceOrgSettings({
+          organizationId,
+          marketplaceEnabled: enabled,
+          publicDisplayName: displayName,
+          defaultPriceOnRequest: defaultPor,
+          acceptEnquiries: accept,
+        });
+        if (!res.ok) setError(res.error);
+        else setMessage("Organisation marketplace settings saved. Projection refreshed.");
+      } finally {
+        setActing(null);
+      }
     });
   }
 
   function toggleFace(face: FaceRow, publishable: boolean) {
     setError(null);
     setMessage(null);
+    setActing(face.id);
     startTransition(async () => {
-      const res = await setFacePublishableAction({
-        faceId: face.id,
-        boardId,
-        publishable,
-        priceOnRequest: face.price_on_request,
-        marketTitle: face.market_title ?? undefined,
-        marketBlurb: face.market_blurb ?? undefined,
-      });
-      if (!res.ok) setError(res.error);
-      else {
-        setMessage(
-          publishable
-            ? res.listed
-              ? `Face ${face.face_label} listed on Market.`
-              : `Face ${face.face_label} marked publishable — enable org marketplace + meet gates to list.`
-            : `Face ${face.face_label} unpublished.`,
-        );
+      try {
+        const res = await setFacePublishableAction({
+          faceId: face.id,
+          boardId,
+          publishable,
+          priceOnRequest: face.price_on_request,
+          marketTitle: face.market_title ?? undefined,
+          marketBlurb: face.market_blurb ?? undefined,
+        });
+        if (!res.ok) setError(res.error);
+        else {
+          setMessage(
+            publishable
+              ? res.listed
+                ? `Face ${face.face_label} listed on Market.`
+                : `Face ${face.face_label} marked publishable — enable org marketplace + meet gates to list.`
+              : `Face ${face.face_label} unpublished.`,
+          );
+        }
+      } finally {
+        setActing(null);
       }
     });
   }
@@ -153,8 +165,9 @@ export function BoardMarketplacePanel({
           type="button"
           disabled={pending}
           onClick={saveOrg}
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {acting === "org" ? <Spinner /> : null}
           Save org settings
         </button>
       </section>
@@ -179,8 +192,9 @@ export function BoardMarketplacePanel({
                 type="button"
                 disabled={pending}
                 onClick={() => toggleFace(f, !f.is_publishable)}
-                className="rounded-md border border-[var(--border)] px-3 py-1.5 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-white px-3 py-1.5 hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {acting === f.id ? <Spinner className="size-3" /> : null}
                 {f.is_publishable ? "Unpublish" : "Publish face"}
               </button>
             </li>

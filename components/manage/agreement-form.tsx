@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
 import { formatInrFromPaise } from "@/lib/format";
@@ -337,13 +338,15 @@ export function AgreementForm({
 
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
 
-      <button
+      <PendingButton
         type="submit"
-        disabled={loading || !clients.length || !faces.length}
-        className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+        pending={loading}
+        pendingLabel="Saving…"
+        disabled={!clients.length || !faces.length}
+        className={btnPrimary}
       >
-        {loading ? "Saving…" : "Create agreement"}
-      </button>
+        Create agreement
+      </PendingButton>
       {!clients.length ? (
         <p className="text-xs text-[var(--muted)]">Create a client first.</p>
       ) : null}

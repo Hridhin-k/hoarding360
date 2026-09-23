@@ -3,27 +3,14 @@ import { ManageSidebar } from "@/components/shell/manage-sidebar";
 import { NotificationBell } from "@/components/manage/notification-bell";
 import { ManageGlobalSearch } from "@/components/manage/manage-global-search";
 import { ManageQuickAdd } from "@/components/manage/manage-quick-add";
-import { createClient } from "@/lib/supabase/server";
-import type { OrgRole } from "@/lib/domain/status";
+import { getManageSession } from "@/lib/supabase/session";
 
 export default async function ManageLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
+  const { userId, role } = await getManageSession();
 
-  if (!data?.claims) {
+  if (!userId) {
     redirect("/auth/login?next=/manage");
   }
-
-  const userId = data.claims.sub as string;
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("role")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  const role = (membership?.role as OrgRole | undefined) ?? null;
 
   if (role === "field_technician") {
     redirect("/field");

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
 import { normalizeIndianMobile } from "@/lib/format";
@@ -231,13 +232,9 @@ export function ClientForm({ organizationId, initial }: Props) {
       ) : null}
 
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-      >
-        {loading ? "Saving…" : initial ? "Save client" : "Create client"}
-      </button>
+      <PendingButton type="submit" pending={loading} pendingLabel="Saving…" className={btnPrimary}>
+        {initial ? "Save client" : "Create client"}
+      </PendingButton>
     </form>
   );
 }

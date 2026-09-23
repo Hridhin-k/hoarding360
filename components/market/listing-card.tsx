@@ -28,7 +28,7 @@ export function MarketListingCard({ listing: l }: { listing: MarketplaceListing 
   return (
     <Link
       href={`/boards/${l.listing_slug}`}
-      className="group block overflow-hidden rounded-xl border border-[var(--border)] bg-white hover:border-[var(--primary)]"
+      className="group block overflow-hidden rounded-xl border border-[var(--border)] bg-white hover:border-[var(--primary)] hover:bg-[var(--surface)]"
     >
       <div className={`h-1.5 ${style.bar}`} aria-hidden />
       <div className="aspect-[16/10] bg-[var(--surface)]">

@@ -6,6 +6,7 @@ import {
   refreshAndDispatchOutbound,
   saveNotifySettings,
 } from "@/app/(manage)/manage/settings/actions";
+import { Spinner } from "@/components/ui/pending-button";
 
 type Settings = {
   sms_enabled: boolean;
@@ -58,11 +59,23 @@ export function NotifySettingsForm({ organizationId, initial, recent }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [acting, setActing] = useState<string | null>(null);
+
+  function run(key: string, work: () => Promise<void>) {
+    setActing(key);
+    startTransition(async () => {
+      try {
+        await work();
+      } finally {
+        setActing(null);
+      }
+    });
+  }
 
   function onSave() {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
+    run("save", async () => {
       const res = await saveNotifySettings({
         organizationId,
         smsEnabled,
@@ -83,7 +96,7 @@ export function NotifySettingsForm({ organizationId, initial, recent }: Props) {
   function onDispatch() {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
+    run("dispatch", async () => {
       const res = await refreshAndDispatchOutbound();
       if (!res.ok) setError(res.error);
       else setMessage(`Dispatched: ${JSON.stringify(res.dispatch)}`);
@@ -93,7 +106,7 @@ export function NotifySettingsForm({ organizationId, initial, recent }: Props) {
   function onTest(channel: "sms" | "whatsapp") {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
+    run(channel, async () => {
       const res = await enqueueTestOutbound(organizationId, channel, opsMobile);
       if (!res.ok) setError(res.error);
       else setMessage(`Test ${channel} queued/dispatched.`);
@@ -196,32 +209,36 @@ export function NotifySettingsForm({ organizationId, initial, recent }: Props) {
             type="button"
             disabled={pending}
             onClick={onSave}
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {acting === "save" ? <Spinner /> : null}
             Save
           </button>
           <button
             type="button"
             disabled={pending}
             onClick={onDispatch}
-            className="rounded-md border border-[var(--border)] px-4 py-2 text-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {acting === "dispatch" ? <Spinner /> : null}
             Refresh alerts + dispatch queue
           </button>
           <button
             type="button"
             disabled={pending || !opsMobile}
             onClick={() => onTest("sms")}
-            className="rounded-md border border-[var(--border)] px-4 py-2 text-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {acting === "sms" ? <Spinner /> : null}
             Test SMS
           </button>
           <button
             type="button"
             disabled={pending || !opsMobile}
             onClick={() => onTest("whatsapp")}
-            className="rounded-md border border-[var(--border)] px-4 py-2 text-sm disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-60"
           >
+            {acting === "whatsapp" ? <Spinner /> : null}
             Test WhatsApp
           </button>
         </div>

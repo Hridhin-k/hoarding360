@@ -1,50 +1,110 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { formatInrFromPaise, formatIstDate } from "@/lib/format";
 import {
   dashboardGreeting,
   dashboardPersona,
   canSeeCosts,
 } from "@/lib/domain/dashboard";
-import type { OrgRole } from "@/lib/domain/status";
+import { getManageSession } from "@/lib/supabase/session";
 
 export default async function ManageDashboardPage() {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-
-  const { data: memberships } = await supabase
-    .from("organization_members")
-    .select("role, organizations(id, name)")
-    .eq("user_id", userId ?? "")
-    .is("deactivated_at", null);
-
-  const role = (memberships?.[0]?.role as OrgRole | undefined) ?? null;
+  const { supabase, role, orgId, orgName } = await getManageSession();
   const persona = dashboardPersona(role);
   const showRevenue = canSeeCosts(role) || persona === "sales" || persona === "admin_ops";
   const showFloorPipeline = canSeeCosts(role);
+  const istToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+    new Date(),
+  );
+  const istIn90 = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+    new Date(Date.now() + 90 * 86400000),
+  );
 
-  const orgId =
-    memberships?.[0] &&
-    typeof memberships[0].organizations === "object" &&
-    memberships[0].organizations &&
-    "id" in memberships[0].organizations
-      ? (memberships[0].organizations as { id: string }).id
-      : null;
+  const [
+    boardsRes,
+    expiredRes,
+    expiringRes,
+    missingRes,
+    vacanciesRes,
+    liveRes,
+    lossRowsRes,
+    revenueByClientRes,
+    endingRes,
+    alertsRes,
+    unreadRes,
+    revenueRpc,
+    lossRpc,
+  ] = await Promise.all([
+    supabase.from("boards").select("id, lat, lng").is("deleted_at", null),
+    supabase
+      .from("compliance_records")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("is_mandatory", true)
+      .eq("status", "expired"),
+    supabase
+      .from("compliance_records")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("is_mandatory", true)
+      .eq("status", "expiring_soon"),
+    supabase
+      .from("compliance_records")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("is_mandatory", true)
+      .eq("status", "missing"),
+    supabase
+      .from("upcoming_vacancies")
+      .select(
+        "face_id, board_id, board_code, board_name, face_label, available_from, card_rate_paise, occupancy_status, city",
+      )
+      .order("available_from", { ascending: true })
+      .limit(persona === "sales" ? 10 : 5),
+    supabase
+      .from("live_agreements")
+      .select("id, ref_code, starts_on, ends_on, value_paise, client_id, client_name, face_count")
+      .order("ends_on", { ascending: true })
+      .limit(8),
+    supabase
+      .from("vacancy_loss_faces")
+      .select(
+        "face_id, board_id, board_code, board_name, face_label, days_vacant, loss_paise, card_rate_paise, city",
+      )
+      .order("loss_paise", { ascending: false })
+      .limit(5),
+    showFloorPipeline
+      ? supabase
+          .from("revenue_by_client")
+          .select("client_id, client_name, agreement_count, value_paise")
+          .order("value_paise", { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] as never[] }),
+    supabase
+      .from("agreements")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("status", "active")
+      .gte("ends_on", istToday)
+      .lte("ends_on", istIn90),
+    supabase
+      .from("notifications")
+      .select("id, title, kind, priority, href, read_at, created_at")
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(persona === "compliance" ? 10 : 5),
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .is("read_at", null),
+    orgId && showRevenue
+      ? supabase.rpc("org_live_revenue_paise", { p_organization_id: orgId })
+      : Promise.resolve({ data: 0 }),
+    orgId
+      ? supabase.rpc("org_vacancy_loss_paise", { p_organization_id: orgId })
+      : Promise.resolve({ data: 0 }),
+  ]);
 
-  const orgName =
-    memberships?.[0] &&
-    typeof memberships[0].organizations === "object" &&
-    memberships[0].organizations &&
-    "name" in memberships[0].organizations
-      ? (memberships[0].organizations as { name: string }).name
-      : "Your company";
-
-  const { data: boards } = await supabase
-    .from("boards")
-    .select("id, lat, lng")
-    .is("deleted_at", null);
-
+  const boards = boardsRes.data;
   const boardIds = (boards ?? []).map((b) => b.id);
   const boardCount = boardIds.length;
   const withGps = (boards ?? []).filter((b) => b.lat != null && b.lng != null).length;
@@ -58,37 +118,36 @@ export default async function ManageDashboardPage() {
   let faceTotal = 0;
 
   if (boardIds.length) {
-    const { data: photos } = await supabase
-      .from("board_photos")
-      .select("board_id")
-      .in("board_id", boardIds)
-      .is("deleted_at", null);
-    withPhoto = new Set((photos ?? []).map((p) => p.board_id)).size;
+    const [photosRes, facesRes, permitsRes] = await Promise.all([
+      supabase
+        .from("board_photos")
+        .select("board_id")
+        .in("board_id", boardIds)
+        .is("deleted_at", null),
+      supabase
+        .from("board_faces")
+        .select("board_id, id, card_rate_paise, occupancy_status")
+        .in("board_id", boardIds)
+        .is("deleted_at", null),
+      supabase
+        .from("compliance_records")
+        .select("board_id")
+        .in("board_id", boardIds)
+        .is("deleted_at", null),
+    ]);
 
-    const { data: faces } = await supabase
-      .from("board_faces")
-      .select("board_id, id, card_rate_paise, occupancy_status")
-      .in("board_id", boardIds)
-      .is("deleted_at", null);
-    withRate = new Set(
-      (faces ?? []).filter((f) => f.card_rate_paise != null).map((f) => f.board_id),
-    ).size;
-
-    const faceIds = (faces ?? []).map((f) => f.id);
-    faceTotal = faces?.length ?? 0;
-    for (const f of faces ?? []) {
+    withPhoto = new Set((photosRes.data ?? []).map((p) => p.board_id)).size;
+    const faces = facesRes.data ?? [];
+    withRate = new Set(faces.filter((f) => f.card_rate_paise != null).map((f) => f.board_id)).size;
+    faceTotal = faces.length;
+    for (const f of faces) {
       const s = f.occupancy_status as string;
       if (s === "occupied" || s === "booked_future" || s === "on_hold") occupiedFaces += 1;
       else if (s === "vacant" || s === "becoming_vacant") vacantFaces += 1;
     }
+    withPermit = new Set((permitsRes.data ?? []).map((p) => p.board_id)).size;
 
-    const { data: permits } = await supabase
-      .from("compliance_records")
-      .select("board_id")
-      .in("board_id", boardIds)
-      .is("deleted_at", null);
-    withPermit = new Set((permits ?? []).map((p) => p.board_id)).size;
-
+    const faceIds = faces.map((f) => f.id);
     if (faceIds.length) {
       const { data: agrFaces } = await supabase
         .from("agreement_faces")
@@ -104,113 +163,29 @@ export default async function ManageDashboardPage() {
     }
   }
 
-  const occupancyPct = faceTotal
-    ? Math.round((occupiedFaces / faceTotal) * 100)
-    : 0;
+  const occupancyPct = faceTotal ? Math.round((occupiedFaces / faceTotal) * 100) : 0;
   const noPhotoCount = Math.max(0, boardCount - withPhoto);
   const noRateCount = Math.max(0, boardCount - withRate);
-
   const pct = (n: number) => (boardCount ? Math.round((n / boardCount) * 100) : 0);
 
-  await supabase.rpc("refresh_compliance_alerts");
-
-  const { count: expiredCount } = await supabase
-    .from("compliance_records")
-    .select("id", { count: "exact", head: true })
-    .is("deleted_at", null)
-    .eq("is_mandatory", true)
-    .eq("status", "expired");
-
-  const { count: expiringCount } = await supabase
-    .from("compliance_records")
-    .select("id", { count: "exact", head: true })
-    .is("deleted_at", null)
-    .eq("is_mandatory", true)
-    .eq("status", "expiring_soon");
-
-  const { count: missingCount } = await supabase
-    .from("compliance_records")
-    .select("id", { count: "exact", head: true })
-    .is("deleted_at", null)
-    .eq("is_mandatory", true)
-    .eq("status", "missing");
-
-  const { data: vacancies } = await supabase
-    .from("upcoming_vacancies")
-    .select(
-      "face_id, board_id, board_code, board_name, face_label, available_from, card_rate_paise, occupancy_status, city",
-    )
-    .order("available_from", { ascending: true })
-    .limit(persona === "sales" ? 10 : 5);
-
+  const expiredCount = expiredRes.count;
+  const expiringCount = expiringRes.count;
+  const missingCount = missingRes.count;
+  const vacancies = vacanciesRes.data;
   const vacancyPipelinePaise = (vacancies ?? []).reduce(
     (sum, v) => sum + (v.card_rate_paise ?? 0),
     0,
   );
-
-  const { data: liveAgreements } = await supabase
-    .from("live_agreements")
-    .select(
-      "id, ref_code, starts_on, ends_on, value_paise, client_id, client_name, face_count",
-    )
-    .order("ends_on", { ascending: true })
-    .limit(8);
-
-  let liveRevenuePaise = 0;
-  let vacancyLossPaise = 0;
-  if (orgId && showRevenue) {
-    const { data: rev } = await supabase.rpc("org_live_revenue_paise", {
-      p_organization_id: orgId,
-    });
-    liveRevenuePaise = typeof rev === "number" ? rev : Number(rev ?? 0);
-  }
-  if (orgId) {
-    const { data: loss } = await supabase.rpc("org_vacancy_loss_paise", {
-      p_organization_id: orgId,
-    });
-    vacancyLossPaise = typeof loss === "number" ? loss : Number(loss ?? 0);
-  }
-
-  const { data: vacancyLossRows } = await supabase
-    .from("vacancy_loss_faces")
-    .select(
-      "face_id, board_id, board_code, board_name, face_label, days_vacant, loss_paise, card_rate_paise, city",
-    )
-    .order("loss_paise", { ascending: false })
-    .limit(5);
-
-  const { data: revenueByClient } = showFloorPipeline
-    ? await supabase
-        .from("revenue_by_client")
-        .select("client_id, client_name, agreement_count, value_paise")
-        .order("value_paise", { ascending: false })
-        .limit(5)
-    : { data: [] as never[] };
-
-  const { count: endingSoonCount } = await supabase
-    .from("agreements")
-    .select("id", { count: "exact", head: true })
-    .is("deleted_at", null)
-    .eq("status", "active")
-    .gte("ends_on", new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()))
-    .lte(
-      "ends_on",
-      new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
-        new Date(Date.now() + 90 * 86400000),
-      ),
-    );
-
-  const { data: recentAlerts } = await supabase
-    .from("notifications")
-    .select("id, title, kind, priority, href, read_at, created_at")
-    .is("read_at", null)
-    .order("created_at", { ascending: false })
-    .limit(persona === "compliance" ? 10 : 5);
-
-  const { count: unreadAlertCount } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .is("read_at", null);
+  const liveAgreements = liveRes.data;
+  const liveRevenuePaise =
+    typeof revenueRpc.data === "number" ? revenueRpc.data : Number(revenueRpc.data ?? 0);
+  const vacancyLossPaise =
+    typeof lossRpc.data === "number" ? lossRpc.data : Number(lossRpc.data ?? 0);
+  const vacancyLossRows = lossRowsRes.data;
+  const revenueByClient = revenueByClientRes.data;
+  const endingSoonCount = endingRes.count;
+  const recentAlerts = alertsRes.data;
+  const unreadAlertCount = unreadRes.count;
 
   const riskTotal = (expiredCount ?? 0) + (expiringCount ?? 0) + (missingCount ?? 0);
 

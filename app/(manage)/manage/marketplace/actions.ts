@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export async function saveMarketplaceOrgSettings(input: {
@@ -28,7 +28,9 @@ export async function saveMarketplaceOrgSettings(input: {
   if (error) return { ok: false, error: error.message };
 
   await supabase.rpc("refresh_all_marketplace_listings");
+  revalidateTag("marketplace-listings", "max");
   revalidatePath("/manage");
+  revalidatePath("/");
   revalidatePath("/boards");
   return { ok: true };
 }
@@ -52,7 +54,9 @@ export async function setFacePublishableAction(input: {
 
   if (error) return { ok: false, error: error.message };
 
+  revalidateTag("marketplace-listings", "max");
   revalidatePath(`/manage/boards/${input.boardId}`);
+  revalidatePath("/");
   revalidatePath("/boards");
   const listed =
     data && typeof data === "object" && "listed" in data

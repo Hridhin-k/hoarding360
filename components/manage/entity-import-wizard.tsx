@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import {
   applyAgreementImport,
   applyClientImport,
@@ -29,6 +29,7 @@ type Props = { organizationId: string; kind: Exclude<ImportEntityKind, "boards">
 async function fileToMatrix(file: File): Promise<string[][]> {
   const n = file.name.toLowerCase();
   if (n.endsWith(".xlsx") || n.endsWith(".xls")) {
+    const XLSX = await import("xlsx");
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
     const sheet = wb.Sheets[wb.SheetNames[0]!];
@@ -189,9 +190,9 @@ export function EntityImportWizard({ organizationId, kind }: Props) {
                 type="button"
                 disabled={loading || stats.ok === 0}
                 onClick={() => void onConfirm()}
-                className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
               >
-                {loading ? "Importing…" : `Import ${stats.ok}`}
+                {loading ? <Spinner /> : null}{loading ? "Importing…" : `Import ${stats.ok}`}
               </button>
             </div>
           </div>

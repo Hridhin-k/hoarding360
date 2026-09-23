@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { fieldBoardPath } from "@/lib/domain/field";
@@ -80,9 +81,9 @@ export default function FieldScanPage() {
           type="button"
           disabled={loading}
           onClick={() => void go(token)}
-          className="mt-3 min-h-12 w-full rounded-lg border border-[var(--border)] bg-white py-3 text-sm font-medium disabled:opacity-50"
+          className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-white py-3 text-sm font-medium hover:bg-[var(--surface)] disabled:opacity-50"
         >
-          {loading ? "Looking up…" : "Open board"}
+          {loading ? <Spinner /> : null}{loading ? "Looking up…" : "Open board"}
         </button>
       </div>
 

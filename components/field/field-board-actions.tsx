@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { createClient } from "@/lib/supabase/browser";
 import {
   INCIDENT_CATEGORIES,
@@ -389,14 +390,19 @@ export function FieldBoardActions({ board, faces }: Props) {
             type="button"
             disabled={busy}
             onClick={() => void submitIncident(null)}
-            className="min-h-12 w-full rounded-md bg-[var(--accent)] py-3 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
-            {busy ? "Saving…" : "Report without photo"}
+            {busy ? <Spinner /> : null}{busy ? "Saving…" : "Report without photo"}
           </button>
         </div>
       )}
 
-      {busy ? <p className="text-sm text-[var(--muted)]">Working…</p> : null}
+      {busy ? (
+        <p className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+          <Spinner />
+          Working…
+        </p>
+      ) : null}
       {status ? <p className="text-sm text-[var(--ok)]">{status}</p> : null}
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
     </div>

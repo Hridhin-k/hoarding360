@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import { activateAgreement } from "@/app/(manage)/manage/agreements/actions";
 
@@ -34,9 +35,9 @@ export function ActivateAgreementForm({ agreementId }: { agreementId: string }) 
             else router.refresh();
           })
         }
-        className="mt-3 rounded-md bg-[var(--google-green)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="mt-3 inline-flex items-center justify-center gap-2 rounded-md bg-[var(--google-green)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "Activating…" : "Activate agreement"}
+        {pending ? <Spinner /> : null}{pending ? "Activating…" : "Activate agreement"}
       </button>
     </div>
   );

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import {
   markAllNotificationsReadForm,
   refreshAlertsForm,
 } from "@/app/(manage)/manage/notifications/actions";
 import { NotificationRow } from "@/components/manage/notification-row";
+import { FormSubmit, btnPrimary, btnSecondary } from "@/components/ui/pending-button";
 import {
   DigestPrefsForm,
   type DigestPrefs,
@@ -13,22 +13,7 @@ import {
 import type { AppNotification } from "@/lib/domain/notifications";
 
 export default async function NotificationsPage() {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub as string | undefined;
-  if (!userId) redirect("/auth/login?next=/manage/notifications");
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
-
-  await supabase.rpc("refresh_compliance_alerts");
+  const { supabase, userId, orgId } = await requireManageSession("/manage/notifications");
 
   const [{ data: rows }, { data: prefs }] = await Promise.all([
     supabase
@@ -44,7 +29,7 @@ export default async function NotificationsPage() {
         "in_app_enabled, email_digest_enabled, digest_frequency, compliance_alerts, agreement_alerts, incident_alerts, vacancy_alerts, quiet_hours_start, quiet_hours_end",
       )
       .eq("user_id", userId)
-      .eq("organization_id", membership.organization_id)
+      .eq("organization_id", orgId)
       .maybeSingle(),
   ]);
 
@@ -57,32 +42,29 @@ export default async function NotificationsPage() {
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl">Alerts</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            M07 · {unread} unread · Permit + agreement ending
+            M07 · {unread} unread · Permit + agreement ending · refreshes every 15 minutes
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={refreshAlertsForm}>
-            <button
-              type="submit"
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            >
+            <FormSubmit pendingLabel="Refreshing…" className={btnSecondary}>
               Refresh alerts
-            </button>
+            </FormSubmit>
           </form>
           <form action={markAllNotificationsReadForm}>
-            <button
-              type="submit"
-              className="rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            <FormSubmit
+              pendingLabel="Marking…"
+              className={btnPrimary}
               disabled={unread === 0}
             >
               Mark all read
-            </button>
+            </FormSubmit>
           </form>
         </div>
       </div>
 
       <DigestPrefsForm
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         initial={(prefs as DigestPrefs | null) ?? null}
       />
 

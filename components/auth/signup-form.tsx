@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { signUpOwner } from "@/app/auth/actions";
 import { PasswordInput } from "@/components/auth/password-input";
+import { PendingButton, btnPrimary } from "@/components/ui/pending-button";
 
 export function SignupForm() {
   const router = useRouter();
@@ -95,13 +96,9 @@ export function SignupForm() {
         />
       </label>
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-      >
-        {loading ? "Creating…" : "Create account"}
-      </button>
+      <PendingButton type="submit" pending={loading} pendingLabel="Creating…" className={btnPrimary}>
+        Create account
+      </PendingButton>
     </form>
   );
 }

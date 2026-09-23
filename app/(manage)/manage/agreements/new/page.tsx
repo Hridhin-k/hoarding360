@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AgreementForm } from "@/components/manage/agreement-form";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 
 export default async function NewAgreementPage({
   searchParams,
@@ -9,33 +8,18 @@ export default async function NewAgreementPage({
   searchParams: Promise<{ client?: string; face?: string }>;
 }) {
   const { client: defaultClientId, face: defaultFaceId } = await searchParams;
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
+  const { supabase, orgId } = await requireManageSession("/manage/agreements/new");
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId ?? "")
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
-
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id, name")
-    .is("deleted_at", null)
-    .order("name");
-
-  const { data: faceRows } = await supabase
-    .from("board_faces")
-    .select(
-      "id, face_label, card_rate_paise, occupancy_status, board_id, boards(board_code, name)",
-    )
-    .is("deleted_at", null)
-    .order("face_label");
+  const [{ data: clients }, { data: faceRows }] = await Promise.all([
+    supabase.from("clients").select("id, name").is("deleted_at", null).order("name"),
+    supabase
+      .from("board_faces")
+      .select(
+        "id, face_label, card_rate_paise, occupancy_status, board_id, boards(board_code, name)",
+      )
+      .is("deleted_at", null)
+      .order("face_label"),
+  ]);
 
   const faces = (faceRows ?? []).map((f) => {
     const board = Array.isArray(f.boards) ? f.boards[0] : f.boards;
@@ -64,7 +48,7 @@ export default async function NewAgreementPage({
         </p>
       </div>
       <AgreementForm
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         clients={clients ?? []}
         faces={faces}
         defaultClientId={defaultClientId}

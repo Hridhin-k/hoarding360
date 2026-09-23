@@ -10,6 +10,7 @@ import {
   type VaultDocument,
 } from "@/lib/domain/documents";
 import { formatIstDate } from "@/lib/format";
+import { Spinner } from "@/components/ui/pending-button";
 
 const inputClass =
   "rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--accent)]";
@@ -219,7 +220,12 @@ export function EntityDocumentsVault({
           </label>
         </div>
         {error ? <p className="mt-2 text-sm text-[var(--google-red)]">{error}</p> : null}
-        {uploading ? <p className="mt-2 text-sm text-[var(--muted)]">Uploading…</p> : null}
+        {uploading ? (
+          <p className="mt-2 inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+            <Spinner className="size-3.5" />
+            Uploading…
+          </p>
+        ) : null}
       </div>
 
       {!documents.length ? (
@@ -259,8 +265,9 @@ export function EntityDocumentsVault({
                   type="button"
                   disabled={busyId === d.id}
                   onClick={() => void softDelete(d.id)}
-                  className="text-xs text-[var(--google-red)] underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-xs text-[var(--google-red)] underline hover:opacity-80 disabled:opacity-50"
                 >
+                  {busyId === d.id ? <Spinner className="size-3" /> : null}
                   Remove
                 </button>
               </div>

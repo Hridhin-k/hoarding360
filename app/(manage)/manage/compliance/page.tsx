@@ -13,30 +13,29 @@ export default async function ComplianceRiskPage({
   const view = sp.view === "queue" ? "queue" : "risk";
 
   const supabase = await createClient();
+  const istToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+    new Date(),
+  );
 
-  await supabase.rpc("refresh_compliance_alerts");
-
-  const { data: records, error } = await supabase
-    .from("compliance_records")
-    .select(
-      "id, board_id, clearance_type, governing_body, expiry_date, status, is_mandatory, under_renewal, boards(board_code, name, city)",
-    )
-    .is("deleted_at", null)
-    .eq("is_mandatory", true)
-    .in("status", ["expired", "expiring_soon", "missing", "under_renewal"])
-    .order("expiry_date", { ascending: true, nullsFirst: true });
-
-  const { data: overrideBoards } = await supabase
-    .from("boards")
-    .select(
-      "id, board_code, name, city, compliance_publish_override_until, compliance_publish_override_reason",
-    )
-    .is("deleted_at", null)
-    .not("compliance_publish_override_until", "is", null)
-    .gte(
-      "compliance_publish_override_until",
-      new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()),
-    );
+  const [{ data: records, error }, { data: overrideBoards }] = await Promise.all([
+    supabase
+      .from("compliance_records")
+      .select(
+        "id, board_id, clearance_type, governing_body, expiry_date, status, is_mandatory, under_renewal, boards(board_code, name, city)",
+      )
+      .is("deleted_at", null)
+      .eq("is_mandatory", true)
+      .in("status", ["expired", "expiring_soon", "missing", "under_renewal"])
+      .order("expiry_date", { ascending: true, nullsFirst: true }),
+    supabase
+      .from("boards")
+      .select(
+        "id, board_code, name, city, compliance_publish_override_until, compliance_publish_override_reason",
+      )
+      .is("deleted_at", null)
+      .not("compliance_publish_override_until", "is", null)
+      .gte("compliance_publish_override_until", istToday),
+  ]);
 
   const groups: Record<string, NonNullable<typeof records>> = {
     expired: [],

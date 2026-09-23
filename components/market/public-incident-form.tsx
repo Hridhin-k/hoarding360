@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { createClient } from "@/lib/supabase/browser";
 
 export function PublicIncidentForm({ qrToken, boardCode }: { qrToken: string; boardCode: string }) {
@@ -110,9 +111,9 @@ export function PublicIncidentForm({ qrToken, boardCode }: { qrToken: string; bo
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "Sending…" : "Submit report"}
+        {pending ? <Spinner /> : null}{pending ? "Sending…" : "Submit report"}
       </button>
     </form>
   );

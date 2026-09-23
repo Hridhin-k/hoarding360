@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/domain/activity";
 import { COMPLIANCE_BADGE } from "@/lib/domain/compliance";
 import type { ComplianceStatus } from "@/lib/domain/status";
 import { CompleteRenewalForm } from "@/components/manage/complete-renewal-form";
+import { Spinner } from "@/components/ui/pending-button";
 import { formatIstDate, formatInrFromPaise } from "@/lib/format";
 
 export type ComplianceRow = {
@@ -31,18 +32,18 @@ type Props = {
 
 export function ComplianceRecordsList({ organizationId, boardId, records }: Props) {
   const router = useRouter();
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busy, setBusy] = useState<{ id: string; action: "renew" | "remove" } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function markUnderRenewal(id: string) {
-    setBusyId(id);
+    setBusy({ id, action: "renew" });
     setError(null);
     const supabase = createClient();
     const { error: updError } = await supabase
       .from("compliance_records")
       .update({ under_renewal: true })
       .eq("id", id);
-    setBusyId(null);
+    setBusy(null);
     if (updError) {
       setError(updError.message);
       return;
@@ -59,7 +60,7 @@ export function ComplianceRecordsList({ organizationId, boardId, records }: Prop
 
   async function softDelete(id: string) {
     if (!confirm("Remove this clearance record? It will be soft-deleted.")) return;
-    setBusyId(id);
+    setBusy({ id, action: "remove" });
     setError(null);
     const supabase = createClient();
     const { error: updError } = await supabase
@@ -69,7 +70,7 @@ export function ComplianceRecordsList({ organizationId, boardId, records }: Prop
         deletion_reason: "removed by user",
       })
       .eq("id", id);
-    setBusyId(null);
+    setBusy(null);
     if (updError) {
       setError(updError.message);
       return;
@@ -128,10 +129,11 @@ export function ComplianceRecordsList({ organizationId, boardId, records }: Prop
               {!r.under_renewal && (r.status === "expired" || r.status === "expiring_soon") ? (
                 <button
                   type="button"
-                  disabled={busyId === r.id}
+                  disabled={busy?.id === r.id}
                   onClick={() => markUnderRenewal(r.id)}
-                  className="text-[var(--accent)] hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline disabled:opacity-50"
                 >
+                  {busy?.id === r.id && busy.action === "renew" ? <Spinner className="size-3" /> : null}
                   Mark under renewal
                 </button>
               ) : null}
@@ -150,10 +152,11 @@ export function ComplianceRecordsList({ organizationId, boardId, records }: Prop
               ) : null}
               <button
                 type="button"
-                disabled={busyId === r.id}
+                disabled={busy?.id === r.id}
                 onClick={() => softDelete(r.id)}
-                className="text-[var(--risk)] hover:underline disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-[var(--risk)] hover:underline disabled:opacity-50"
               >
+                {busy?.id === r.id && busy.action === "remove" ? <Spinner className="size-3" /> : null}
                 Remove
               </button>
             </div>

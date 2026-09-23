@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
+import { Spinner } from "@/components/ui/pending-button";
 
 /** M10 · Bulk photos named BOARDCODE_face_kind.jpg */
 export function BulkPhotoImport({ organizationId }: { organizationId: string }) {
@@ -90,6 +91,12 @@ export function BulkPhotoImport({ organizationId }: { organizationId: string }) 
         }}
         className="text-sm"
       />
+      {pending ? (
+        <p className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+          <Spinner />
+          Uploading…
+        </p>
+      ) : null}
       {error ? <p className="text-sm text-[var(--google-red)]">{error}</p> : null}
       {log.length ? (
         <ul className="max-h-40 overflow-auto text-xs text-[var(--muted)]">

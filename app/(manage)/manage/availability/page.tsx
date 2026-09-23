@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import { OccupancyBlockForm } from "@/components/manage/occupancy-block-form";
 import { formatInrFromPaise, formatIstDate } from "@/lib/format";
 
@@ -20,20 +19,7 @@ export default async function AvailabilityPage({
   searchParams: Promise<{ from?: string; to?: string; city?: string }>;
 }) {
   const { from: fromParam, to: toParam, city } = await searchParams;
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub as string | undefined;
-  if (!userId) redirect("/auth/login?next=/manage/availability");
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
+  const { supabase, orgId } = await requireManageSession("/manage/availability");
 
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -50,7 +36,7 @@ export default async function AvailabilityPage({
     .select(
       "id, face_label, card_rate_paise, occupancy_status, available_from, board_id, boards!inner(board_code, name, city, lifecycle_status)",
     )
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .is("deleted_at", null)
     .order("face_label");
 
@@ -200,7 +186,7 @@ export default async function AvailabilityPage({
       </section>
 
       <OccupancyBlockForm
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         faces={blockFaces}
       />
     </div>

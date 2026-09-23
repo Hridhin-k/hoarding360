@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireManageSession } from "@/lib/supabase/session";
 import { NotifySettingsForm } from "@/components/manage/notify-settings-form";
 import { CompanyProfileForm } from "@/components/manage/company-profile-form";
 import { OpsSettingsPanel } from "@/components/manage/ops-settings-panel";
@@ -11,88 +10,92 @@ import {
 import { PermissionMatrixPanel } from "@/components/manage/permission-matrix-panel";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  if (!userId) redirect("/auth/login?next=/manage/settings");
+  const { supabase, orgId, role } = await requireManageSession("/manage/settings");
+  const isAdmin = role === "company_admin";
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id, role, organizations(*)")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
+  const [orgRes, settingsRes, opsRes, typesRes, recentRes, membersRes, invitesRes] =
+    await Promise.all([
+      supabase
+        .from("organizations")
+        .select(
+          "id, name, legal_name, gstin, address_line, city, state, pin_code, brand_primary",
+        )
+        .eq("id", orgId)
+        .maybeSingle(),
+      supabase
+        .from("organization_notify_settings")
+        .select(
+          "sms_enabled, whatsapp_enabled, email_enabled, dry_run, ops_mobile, ops_email, compliance_alerts_enabled, agreement_reminders_enabled, client_reminders_enabled",
+        )
+        .eq("organization_id", orgId)
+        .maybeSingle(),
+      supabase
+        .from("organization_ops_settings")
+        .select("prelisting_window_days, alert_escalate_after_hours")
+        .eq("organization_id", orgId)
+        .maybeSingle(),
+      supabase
+        .from("organization_clearance_types")
+        .select("id, code, label, is_mandatory_default, active")
+        .eq("organization_id", orgId)
+        .order("sort_order"),
+      supabase
+        .from("outbound_messages")
+        .select("id, channel, template_key, to_e164, status, provider, error, created_at, body")
+        .eq("organization_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      isAdmin
+        ? supabase
+            .from("organization_members")
+            .select("id, user_id, role, deactivated_at, scoped_cities, scoped_districts")
+            .eq("organization_id", orgId)
+            .order("created_at")
+        : Promise.resolve({ data: [] as never[] }),
+      isAdmin
+        ? supabase
+            .from("organization_invites")
+            .select("id, email, role, status, created_at")
+            .eq("organization_id", orgId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] as never[] }),
+    ]);
 
-  if (!membership?.organization_id) redirect("/manage");
-
-  const org = membership.organizations as unknown as {
-    id: string;
-    name: string;
-    legal_name: string | null;
-    gstin: string | null;
-    address_line: string | null;
-    city: string | null;
-    state: string | null;
-    pin_code: string | null;
-    brand_primary: string | null;
+  const org = orgRes.data ?? {
+    id: orgId,
+    name: "Your company",
+    legal_name: null,
+    gstin: null,
+    address_line: null,
+    city: null,
+    state: null,
+    pin_code: null,
+    brand_primary: null,
   };
-
-  const isAdmin = membership.role === "company_admin";
-
-  const { data: settings } = await supabase
-    .from("organization_notify_settings")
-    .select(
-      "sms_enabled, whatsapp_enabled, email_enabled, dry_run, ops_mobile, ops_email, compliance_alerts_enabled, agreement_reminders_enabled, client_reminders_enabled",
-    )
-    .eq("organization_id", membership.organization_id)
-    .maybeSingle();
-
-  const { data: opsSettings } = await supabase
-    .from("organization_ops_settings")
-    .select("prelisting_window_days, alert_escalate_after_hours")
-    .eq("organization_id", membership.organization_id)
-    .maybeSingle();
-
-  const { data: clearanceTypes } = await supabase
-    .from("organization_clearance_types")
-    .select("id, code, label, is_mandatory_default, active")
-    .eq("organization_id", membership.organization_id)
-    .order("sort_order");
-
-  const { data: recent } = await supabase
-    .from("outbound_messages")
-    .select(
-      "id, channel, template_key, to_e164, status, provider, error, created_at, body",
-    )
-    .eq("organization_id", membership.organization_id)
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const settings = settingsRes.data;
+  const opsSettings = opsRes.data;
+  const clearanceTypes = typesRes.data;
+  const recent = recentRes.data;
 
   let teamRows: TeamMemberRow[] = [];
-  let invites: { id: string; email: string; role: string; status: string; created_at: string }[] =
-    [];
+  const invites = invitesRes.data ?? [];
 
   if (isAdmin) {
-    const { data: members } = await supabase
-      .from("organization_members")
-      .select("id, user_id, role, deactivated_at, scoped_cities, scoped_districts")
-      .eq("organization_id", membership.organization_id)
-      .order("created_at");
-
+    const members = membersRes.data ?? [];
+    const profileIds = members.map((m) => m.user_id);
     const admin = createAdminClient();
-    const { data: listed } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const [{ data: listed }, { data: profiles }] = await Promise.all([
+      admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+      profileIds.length
+        ? supabase.from("profiles").select("id, full_name").in("id", profileIds)
+        : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
+    ]);
     const emailById = new Map(
       (listed?.users ?? []).map((u) => [u.id, u.email ?? null] as const),
     );
-
-    const profileIds = (members ?? []).map((m) => m.user_id);
-    const { data: profiles } = profileIds.length
-      ? await supabase.from("profiles").select("id, full_name").in("id", profileIds)
-      : { data: [] as { id: string; full_name: string | null }[] };
     const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-
-    teamRows = (members ?? []).map((m) => ({
+    teamRows = members.map((m) => ({
       id: m.id,
       user_id: m.user_id,
       role: m.role,
@@ -102,14 +105,6 @@ export default async function SettingsPage() {
       scoped_cities: m.scoped_cities ?? [],
       scoped_districts: m.scoped_districts ?? [],
     }));
-
-    const { data: inviteRows } = await supabase
-      .from("organization_invites")
-      .select("id, email, role, status, created_at")
-      .eq("organization_id", membership.organization_id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    invites = inviteRows ?? [];
   }
 
   return (
@@ -124,7 +119,7 @@ export default async function SettingsPage() {
       {isAdmin ? (
         <>
           <CompanyProfileForm
-            organizationId={membership.organization_id}
+            organizationId={orgId}
             initial={{
               name: org.name,
               legal_name: org.legal_name,
@@ -137,7 +132,7 @@ export default async function SettingsPage() {
             }}
           />
           <TeamMembersPanel
-            organizationId={membership.organization_id}
+            organizationId={orgId}
             members={teamRows}
             invites={invites}
           />
@@ -150,7 +145,7 @@ export default async function SettingsPage() {
 
       {isAdmin ? (
         <OpsSettingsPanel
-          organizationId={membership.organization_id}
+          organizationId={orgId}
           prelistingWindowDays={opsSettings?.prelisting_window_days ?? 30}
           alertEscalateAfterHours={opsSettings?.alert_escalate_after_hours ?? 24}
           clearanceTypes={clearanceTypes ?? []}
@@ -162,7 +157,7 @@ export default async function SettingsPage() {
       <div>
         <h2 className="mb-3 text-sm font-medium">Notifications & messaging</h2>
         <NotifySettingsForm
-          organizationId={membership.organization_id}
+          organizationId={orgId}
           initial={settings}
           recent={recent ?? []}
         />

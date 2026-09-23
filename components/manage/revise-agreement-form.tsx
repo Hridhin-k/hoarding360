@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import { reviseAgreementAsNew } from "@/app/(manage)/manage/agreements/actions";
 
@@ -35,9 +36,9 @@ export function ReviseAgreementForm({ agreementId }: { agreementId: string }) {
             else router.push(`/manage/agreements/${res.id}`);
           })
         }
-        className="mt-3 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--wash)] disabled:opacity-60"
+        className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--surface)] disabled:opacity-60"
       >
-        {pending ? "Creating draft…" : "Create revision draft"}
+        {pending ? <Spinner /> : null}{pending ? "Creating draft…" : "Create revision draft"}
       </button>
     </div>
   );

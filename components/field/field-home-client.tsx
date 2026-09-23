@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { pendingCount } from "@/lib/field/offline-queue";
 import { syncOfflineQueue } from "@/lib/field/sync";
+import { Spinner } from "@/components/ui/pending-button";
 
 export function FieldHomeClient({
   recentProofs,
@@ -70,8 +71,9 @@ export function FieldHomeClient({
             type="button"
             disabled={!online || syncing}
             onClick={() => void onSync()}
-            className="mt-3 min-h-12 w-full rounded-md border border-[var(--border)] py-3 text-sm disabled:opacity-50"
+            className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white py-3 text-sm hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50"
           >
+            {syncing ? <Spinner /> : null}
             {syncing ? "Syncing…" : "Sync now"}
           </button>
         </div>

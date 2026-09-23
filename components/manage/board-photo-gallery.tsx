@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { logActivity } from "@/lib/domain/activity";
@@ -97,8 +98,8 @@ export function BoardPhotoGallery({ organizationId, boardId, photos }: Props) {
             ))}
           </select>
         </label>
-        <label className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white">
-          {uploading ? "Uploading…" : "Upload photo"}
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+          {uploading ? <Spinner /> : null}{uploading ? "Uploading…" : "Upload photo"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

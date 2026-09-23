@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { createProofShareLink } from "@/app/(manage)/manage/proof-review/actions";
 
 export function ProofShareButton({ boardId }: { boardId: string }) {
@@ -21,9 +22,9 @@ export function ProofShareButton({ boardId }: { boardId: string }) {
             else setUrl(`${window.location.origin}/share/proof/${res.token}`);
           })
         }
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+        className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm hover:bg-[var(--surface)]"
       >
-        {pending ? "Creating…" : "Create shareable proof link"}
+        {pending ? <Spinner /> : null}{pending ? "Creating…" : "Create shareable proof link"}
       </button>
       {url ? (
         <p className="break-all text-xs text-[var(--primary)]">

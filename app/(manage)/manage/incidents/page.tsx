@@ -1,43 +1,30 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireManageSession } from "@/lib/supabase/session";
 import {
   CreateIncidentForm,
   IncidentStatusSelect,
 } from "@/components/manage/incident-forms";
 
 export default async function IncidentsPage() {
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub as string | undefined;
-  if (!userId) redirect("/auth/login?next=/manage/incidents");
+  const { supabase, orgId } = await requireManageSession("/manage/incidents");
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", userId)
-    .is("deactivated_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership?.organization_id) redirect("/manage");
-
-  const { data: boards } = await supabase
-    .from("boards")
-    .select("id, board_code, name")
-    .eq("organization_id", membership.organization_id)
-    .is("deleted_at", null)
-    .order("board_code");
-
-  const { data: incidents } = await supabase
-    .from("incidents")
-    .select(
-      "id, title, status, severity, category, created_at, board_id, boards(board_code, name)",
-    )
-    .eq("organization_id", membership.organization_id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const [{ data: boards }, { data: incidents }] = await Promise.all([
+    supabase
+      .from("boards")
+      .select("id, board_code, name")
+      .eq("organization_id", orgId)
+      .is("deleted_at", null)
+      .order("board_code"),
+    supabase
+      .from("incidents")
+      .select(
+        "id, title, status, severity, category, created_at, board_id, boards(board_code, name)",
+      )
+      .eq("organization_id", orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
 
   const open = (incidents ?? []).filter(
     (i) => i.status !== "closed" && i.status !== "resolved",
@@ -53,7 +40,7 @@ export default async function IncidentsPage() {
       </div>
 
       <CreateIncidentForm
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         boards={(boards ?? []).map((b) => ({
           id: b.id,
           label: `${b.board_code} · ${b.name}`,

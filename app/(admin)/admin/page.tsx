@@ -7,6 +7,7 @@ import {
   setSuspendedForm,
   startImpersonationAuditForm,
 } from "./actions";
+import { FormSubmit, btnPrimary, btnSecondary } from "@/components/ui/pending-button";
 
 const PLANS = ["listing", "starter", "professional", "enterprise", "white_label"] as const;
 
@@ -146,12 +147,9 @@ export default async function AdminHomePage() {
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
             />
           </label>
-          <button
-            type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-          >
+          <FormSubmit pendingLabel="Creating…" className={btnPrimary}>
             Create
-          </button>
+          </FormSubmit>
         </form>
       </section>
 
@@ -195,9 +193,9 @@ export default async function AdminHomePage() {
                         ))}
                       </select>
                     </label>
-                    <button type="submit" className="rounded-md border border-[var(--border)] px-3 py-1.5">
+                    <FormSubmit pendingLabel="Saving…" className={`${btnSecondary} px-3 py-1.5`}>
                       Save plan
-                    </button>
+                    </FormSubmit>
                   </form>
 
                   <form action={setFeatureFlagsForm} className="flex flex-wrap items-center gap-3 text-sm">
@@ -222,9 +220,9 @@ export default async function AdminHomePage() {
                       />
                       Field
                     </label>
-                    <button type="submit" className="rounded-md border border-[var(--border)] px-3 py-1.5">
+                    <FormSubmit pendingLabel="Saving…" className={`${btnSecondary} px-3 py-1.5`}>
                       Save flags
-                    </button>
+                    </FormSubmit>
                   </form>
 
                   <form action={setSuspendedForm} className="flex flex-wrap items-end gap-2 text-sm">
@@ -241,12 +239,9 @@ export default async function AdminHomePage() {
                         className="rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
                       />
                     </label>
-                    <button
-                      type="submit"
-                      className="rounded-md border border-[var(--border)] px-3 py-1.5"
-                    >
+                    <FormSubmit pendingLabel="Saving…" className={`${btnSecondary} px-3 py-1.5`}>
                       {org.suspended_at ? "Unsuspend" : "Suspend"}
-                    </button>
+                    </FormSubmit>
                   </form>
                 </div>
               </li>
@@ -286,12 +281,9 @@ export default async function AdminHomePage() {
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5"
             />
           </label>
-          <button
-            type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 font-medium text-white"
-          >
+          <FormSubmit pendingLabel="Recording…" className={btnPrimary}>
             Record session
-          </button>
+          </FormSubmit>
         </form>
         {audits?.length ? (
           <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm">

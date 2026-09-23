@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Spinner } from "@/components/ui/pending-button";
 import { createOccupancyBlock } from "@/app/(manage)/manage/availability/actions";
 
 const inputClass =
@@ -83,9 +84,9 @@ export function OccupancyBlockForm({
             else setMessage("Block saved.");
           })
         }
-        className="mt-3 rounded-md border border-[var(--border)] px-4 py-2 text-sm hover:bg-[var(--wash)] disabled:opacity-60"
+        className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm hover:bg-[var(--surface)] disabled:opacity-60"
       >
-        {pending ? "Saving…" : "Block dates"}
+        {pending ? <Spinner /> : null}{pending ? "Saving…" : "Block dates"}
       </button>
     </div>
   );
