@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { signUpOwner } from "@/app/auth/actions";
+import { PasswordInput } from "@/components/auth/password-input";
 
 export function SignupForm() {
   const router = useRouter();
@@ -85,14 +86,12 @@ export function SignupForm() {
       </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-[var(--muted)]">Password</span>
-        <input
-          type="password"
+        <PasswordInput
           required
           minLength={6}
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-[var(--border)] bg-white px-3 py-2 outline-none focus:border-[var(--accent)]"
+          onChange={setPassword}
         />
       </label>
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}

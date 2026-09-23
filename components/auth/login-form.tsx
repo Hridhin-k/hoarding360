@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { defaultAppPathForRole } from "@/lib/domain/products";
+import { PasswordInput } from "@/components/auth/password-input";
 
 function safeNext(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
@@ -90,13 +91,12 @@ export function LoginForm() {
       </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-[var(--muted)]">Password</span>
-        <input
-          type="password"
+        <PasswordInput
           required
           minLength={6}
+          autoComplete="current-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-[var(--border)] bg-white px-3 py-2 text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+          onChange={setPassword}
         />
       </label>
       {error ? <p className="text-sm text-[var(--risk)]">{error}</p> : null}

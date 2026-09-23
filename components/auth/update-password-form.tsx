@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { PasswordInput } from "@/components/auth/password-input";
 
 export function UpdatePasswordForm() {
   const router = useRouter();
@@ -38,24 +39,22 @@ export function UpdatePasswordForm() {
     <form onSubmit={onSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-[var(--muted)]">New password</span>
-        <input
-          type="password"
+        <PasswordInput
           required
           minLength={6}
+          autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-[var(--border)] bg-white px-3 py-2 outline-none focus:border-[var(--primary)]"
+          onChange={setPassword}
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-[var(--muted)]">Confirm password</span>
-        <input
-          type="password"
+        <PasswordInput
           required
           minLength={6}
+          autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="rounded-md border border-[var(--border)] bg-white px-3 py-2 outline-none focus:border-[var(--primary)]"
+          onChange={setConfirm}
         />
       </label>
       {error ? <p className="text-sm text-[var(--google-red)]">{error}</p> : null}
