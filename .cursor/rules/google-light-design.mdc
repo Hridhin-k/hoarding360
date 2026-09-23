@@ -1,0 +1,232 @@
+---
+description: Google-inspired white-first visual design system for the application
+globs: "**/*.{tsx,jsx,css,scss,ts}"
+alwaysApply: true
+---
+
+# Google-Inspired Light UI Design System
+
+## Core Principle
+
+Build a premium, modern, white-first SaaS interface inspired by Google's visual design principles.
+
+Do NOT copy Google's interface, layouts, logos, icons, or branding.
+
+Use the Google color palette as an accent system. **Google Blue is the only brand/action color.** Red, green, and yellow are semantic states only. Do not paint buttons or icons in all four Google colors.
+
+The application must remain visually distinct.
+
+## Color Tokens
+
+Use only these colors.
+
+### Base
+
+| Token | Hex |
+|---|---|
+| White | `#FFFFFF` |
+| Surface | `#F8F9FA` |
+| Border | `#DADCE0` |
+
+```css
+--background: #FFFFFF;
+--surface: #F8F9FA;
+--border: #DADCE0;
+```
+
+### Google colors
+
+| Token | Hex |
+|---|---|
+| Google Blue | `#4285F4` |
+| Google Red | `#EA4335` |
+| Google Yellow | `#FBBC05` |
+| Google Green | `#34A853` |
+
+```css
+--google-blue: #4285F4;
+--google-red: #EA4335;
+--google-yellow: #FBBC05;
+--google-green: #34A853;
+```
+
+### Text
+
+| Token | Hex |
+|---|---|
+| Primary | `#202124` |
+| Secondary | `#5F6368` |
+| Muted | `#80868B` |
+
+```css
+--text-primary: #202124;
+--text-secondary: #5F6368;
+--text-muted: #80868B;
+```
+
+### Focus / Interactive
+
+| Token | Hex |
+|---|---|
+| Blue | `#1A73E8` |
+
+```css
+--primary: #1A73E8;
+```
+
+## White-First Rule
+
+White must be the dominant visual element.
+
+Prefer:
+
+- White background
+- Light gray surfaces
+- Dark neutral typography
+- Small controlled accent colors
+
+Avoid making large sections blue, red, yellow, or green.
+
+## Google Color Rules
+
+Google colors are semantic accents.
+
+- **Blue:** primary actions, links, active navigation, information, focus states
+- **Green:** success, completed, positive status
+- **Yellow:** warning, attention, pending state
+- **Red:** errors, destructive actions, failed states
+
+Do not randomly decorate the UI with Google colors.
+
+Do not use all four colors just because they are available.
+
+## Forbidden Visual Patterns
+
+Never introduce:
+
+- Dark mode
+- Neon colors
+- Purple
+- Pink gradients
+- Rainbow gradients
+- Heavy gradients
+- Glassmorphism
+- Excessive shadows
+- Excessive rounded containers
+- Huge pill-shaped controls
+- Excessive animations
+- Futuristic AI aesthetics
+- Cyberpunk aesthetics
+- Excessive decorative icons
+- Excessive floating cards
+
+## Surfaces
+
+Prefer:
+
+```css
+background: #FFFFFF;
+border: 1px solid #DADCE0;
+border-radius: 12px;
+```
+
+Use shadows sparingly. Prefer borders over shadows. Do not turn every section into a card.
+
+## Typography
+
+Use a clean sans-serif font. Preferred: Inter, Geist, or system sans-serif.
+
+Text hierarchy:
+
+- Primary text → `#202124`
+- Secondary text → `#5F6368`
+- Muted text → `#80868B`
+
+Avoid excessive font weights. Avoid oversized headings unless the page specifically requires them.
+
+## Buttons
+
+Buttons should be compact, clear, and professional.
+
+- **Primary:** background `#1A73E8`, text `#FFFFFF`
+- **Secondary:** background `#FFFFFF`, border `#DADCE0`, text `#202124`
+- **Danger:** `#EA4335`
+- **Success:** `#34A853`
+- **Warning:** `#FBBC05`
+
+## Inputs
+
+- **Default:** background `#FFFFFF`, border `#DADCE0`
+- **Focus:** border `#1A73E8`
+- **Error:** border and text `#EA4335`
+
+Do not use colored backgrounds for normal form fields.
+
+## Navigation
+
+Navigation should be subtle: white background, neutral borders, blue active state, clear typography, minimal icons, consistent spacing.
+
+Do not make navigation visually louder than the content.
+
+## Spacing
+
+Use this scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64.
+
+Do not introduce arbitrary spacing values unless required by the design.
+
+## Border Radius
+
+Preferred: 6px, 8px, 10px, 12px, 16px.
+
+Avoid excessive rounding. Do not turn every component into a pill.
+
+## Icons
+
+Use one consistent icon library. Icons should normally be 18px–20px and must support the content. Do not use icons purely as decoration.
+
+## Responsive Design
+
+Always design mobile-first. Support 320, 375, 390, 414, 768, 1024, 1280, and 1440+.
+
+Never create fixed-width layouts that break on mobile. Avoid horizontal scrolling.
+
+## Accessibility
+
+Always provide semantic HTML, keyboard navigation, visible focus states, accessible labels, good contrast, proper button states, and screen-reader-friendly markup.
+
+Never rely on color alone to communicate state.
+
+## UX
+
+Every screen must clearly communicate where the user is, what the page is for, what the primary action is, what information is important, and what happened after an action.
+
+Include intentional loading, empty, error, success, and disabled states. Avoid unnecessary loading spinners when content can be server-rendered or progressively displayed.
+
+## Performance
+
+Prefer server rendering where appropriate, minimal client-side JavaScript, reusable components, optimized images, and lazy loading where appropriate.
+
+No unnecessary API calls, state, or dependencies. Do not sacrifice application performance for animations or decorative effects.
+
+## Component Architecture
+
+Create reusable components instead of duplicating UI: Button, Input, Select, Dialog, Card, Badge, Tabs, Dropdown, Table, Toast, EmptyState, LoadingState, ErrorState, Navigation.
+
+Keep components focused. Avoid giant components, spaghetti code, and duplicated styling.
+
+## Before Completing Any UI
+
+Check:
+
+- White is dominant
+- Colors are intentional (blue for actions; red/green/yellow for status only)
+- No unnecessary gradients, neon, purple, or dark sections
+- No excessive cards or shadows
+- Typography is clear and spacing is consistent
+- Mobile layout is intentional
+- Accessibility is considered
+- Loading, error, and empty states exist
+- Primary action is obvious
+- UI feels premium and calm
+
+The final UI should feel like a high-quality modern SaaS application using Google's clean color language, not a Google clone.

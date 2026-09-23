@@ -1,0 +1,42 @@
+# Next.js surfaces
+
+One app, **three products** via route groups (plus platform Admin):
+
+| Group | Path | Product | Audience | Job |
+|-------|------|---------|----------|-----|
+| `(market)` | `/`, `/boards/*` | **Marketplace** | Public advertisers / agencies | Browse verified listings to place an outdoor ad |
+| `(manage)` | `/manage/*` | **Manage CRM** | Media owners + office staff | Inventory, permits, contracts, publish to Market |
+| `(field)` | `/field/*` | **Field PWA** | Tenant field agents | QR, proof of display, incidents, offline queue |
+| `(admin)` | `/admin/*` | Super Admin | Platform staff | Tenants, flags, health |
+
+## Hard rules
+
+- Marketplace chrome must **not** primary-link Field or Admin (owner/field entry is secondary login only).
+- Manage is the owner CRM — never treat Market as the owner workspace.
+- Field technicians (`field_technician`) are redirected from `/manage` → `/field`.
+- Post-login: honour `?next=`; else field roles → `/field`, everyone else → `/manage`.
+- Market reads **publishable projection** only; never floor rates, costs, or client names.
+
+## Patterns
+
+- Prefer Server Components; Client Components only for maps, cameras, offline, interactive CRM
+- Mutations: Server Actions or Route Handlers calling Supabase with user session
+- Never import `admin.ts` into client components
+- Status labels from config/enums — no free-text status compares in UI
+- Board rows in Manage open Board 360 (`/manage/boards/[id]`); Market opens listing detail
+
+## Field PWA
+
+- `manifest` + large tap targets; installable standalone
+- Camera + GPS stamp; queue uploads in IndexedDB when offline
+- Bottom nav: Home · Scan · Queue only (no Market browse)
+
+## Market specifics
+
+- Availability date filter returns faces free for the **whole** range
+- Cart may span owners; enquiry splits so owners never see each other’s rates (V2.0)
+- Exact coordinates only for verified advertisers
+
+## Performance budgets
+
+Owner dashboard &lt; 2s · map interactive &lt; 3s · availability search &lt; 800ms

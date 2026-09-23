@@ -1,0 +1,212 @@
+---
+description: HOARDINGS360 Cursor build roadmap — V0 to production with live Supabase + Next.js. Follow when planning, scaffolding, or shipping any release phase.
+alwaysApply: true
+---
+
+# HOARDINGS360 — Cursor Roadmap (Start → Production)
+
+Source of truth for *what* to build: product docs / Master PRD (modules M01–M35).  
+This roadmap is for *how* to build it in Cursor with **Next.js + live Supabase only**.
+
+## Stack (locked)
+
+| Layer | Choice |
+|-------|--------|
+| App | One Next.js 16 app (App Router): Market + Manage/CRM + Field PWA |
+| Backend | **Live Supabase only** — Auth, Postgres+PostGIS, RLS, Storage, Edge Functions, Realtime |
+| Hosting | Vercel (app) + Supabase cloud (data) |
+| Not used | NestJS, local `supabase start`, Docker Postgres, dual backends |
+
+Route map:
+
+- `/` + `/boards/*` + SEO landings → **Market**
+- `/manage/*` → **Manage / CRM** (owner OS)
+- `/field/*` → **Field PWA** (offline-capable)
+- `/admin/*` → **Super Admin** (platform staff)
+
+## Absolute rules for agents
+
+1. Every feature must map to a **module ID (M01–M35)** and release **V0–V5.0**.
+2. Schema changes go to the **dedicated H360 live Supabase project** via `supabase/migrations` + MCP `apply_migration` — never other linked projects.
+3. **No local Supabase.** Develop and migrate against live (use a Supabase Preview Branch if destructive work needs isolation).
+4. Board/face is the domain centre. Three badges stay separate: lifecycle · compliance · occupancy.
+5. Money in **paise** (`bigint`). Timestamps UTC. Business dates IST `date`. Soft delete only.
+6. Marketplace reads a **publishable projection / view**, not raw owner operational joins on hot paths.
+
+## Cursor working method (every phase)
+
+```
+1. Read this roadmap + product rule for the target version
+2. Open / create checklist in conversation for that phase exit criteria
+3. Schema first (migration) → types → RLS → UI → Edge Function if needed
+4. Verify with live SQL (list_tables / execute_sql) + advisors
+5. Ship only when phase exit criteria pass
+```
+
+Prefer small PRs per module cluster. Do not jump versions (no Market UI before V1.0 Manage core).
+
+---
+
+## Phase 0 — Bootstrap (Week 1) · “V0 foundation”
+
+**Goal:** Empty Next app becomes a multi-surface shell wired to a **new** live Supabase project.
+
+### Agent checklist
+
+- [ ] Create dedicated Supabase project named `hoardings360` (or `h360-prod` / `h360-dev`)
+- [ ] Point Cursor Supabase MCP at **that** project only for this repo
+- [ ] Enable extensions: `postgis`, `pgcrypto`, `uuid-ossp` (as needed)
+- [ ] Add `.env.local` from `.env.example` (URL + anon + service role server-only)
+- [ ] Install: `@supabase/supabase-js`, `@supabase/ssr`, map lib later
+- [ ] App shell: auth layout, `(market)` `(manage)` `(field)` route groups
+- [ ] Design tokens + shared UI primitives
+- [ ] Folder layout:
+
+```
+app/
+  (market)/...
+  (manage)/...
+  (field)/...
+  (admin)/...
+  api/...                 # Route Handlers only when Edge Fn not enough
+lib/supabase/             # browser.ts, server.ts, admin.ts
+lib/domain/               # types, status machines
+components/
+supabase/migrations/      # numbered SQL applied to LIVE project
+supabase/functions/       # Edge Functions deployed to LIVE
+```
+
+**Exit:** Login works against live Auth; empty Manage shell loads; migration pipeline documented.
+
+---
+
+## Phase 1 — Owner OS Core (Months 2–4) · V1.0 · M01–M10 + M33 basic
+
+**Prove:** 10 owners could run permits + contracts daily.
+
+### Schema (live migrations)
+
+Order matters:
+
+1. `tenants`, `profiles`, roles/permissions (M01)
+2. `boards` + PostGIS `geography(Point,4326)` + `board_faces` (M02)
+3. `documents` polymorphic (M03)
+4. `compliance_records` — many per board (M04)
+5. `clients`, `agreements`, `agreement_boards` (M05)
+6. `occupancy_periods` materialised (M06)
+7. `notifications` + rules (M07)
+8. `activity_events` append-only (M08)
+9. Import jobs (M10)
+10. Reserve empty: `campaigns`, `leases`, `work_orders`, `expenses`, `vendors`
+
+RLS: every table `tenant_id`; policy via `auth.uid()` → membership. Cross-tenant tests before UI.
+
+### UI (Manage)
+
+- Role-wise dashboard (M09)
+- Board list / map / **Board 360** (empty later tabs visible)
+- Compliance risk + vault
+- Clients / agreements
+- Bulk import + onboarding tracker
+- Live campaigns + revenue + upcoming vacancies views
+
+### Super Admin (M33 basic)
+
+Tenant create/suspend, feature flags, health, audited impersonation.
+
+**Exit:** Import Excel → boards with GPS/photo/rate/permit; overlapping agreements blocked; permit expiry alerts fire.
+
+---
+
+## Phase 2 — Field + Proof (Month 5) · V1.1 · M11, M12, M32
+
+- QR per structure; Field PWA offline queue (IndexedDB)
+- Incidents lifecycle; Proof of Display geo-check (~150 m)
+- WhatsApp/SMS via Edge Function + provider (templates submitted early)
+- Client contract-expiry reminders
+
+**Exit:** Technician closes proof offline → syncs; branded proof pack PDF.
+
+---
+
+## Phase 3 — Public Marketplace (Months 6–8) · V2.0 · M25–M29 + M33 verify
+
+**No inventory-scale gate.** Face/owner count is a growth KPI, not a launch blocker. Open Market when the product path works and public data is safe.
+
+**Launch readiness (product, not scale):**
+
+- Publishable projection only — no floor rates, costs, or client names on public paths
+- Expired mandatory clearance still auto-unpublishes (audited override only)
+- Browse → listing → enquiry (and hold if in scope) works end-to-end
+- Owner inbox can answer enquiries; SLA is measurable when you choose to enforce it
+- RLS + advisors clean; DPDP/consent and pen test tracked under production readiness below
+
+### Build
+
+- Marketplace projection table/view refreshed by events / cron Edge Fn
+- Map + filters + listing detail + cart + split multi-owner enquiry
+- Holds; price-on-request countdown
+- Owner enquiry / hold / marketplace settings inboxes
+- SEO landings (SSR/ISR); CMS + verification in Super Admin
+
+**Exit:** Public browse + qualified enquiry path live; owners can respond from Manage.
+
+---
+
+## Phase 4 — Media plan + CRM (Month 9) · V2.1 · M13–M15
+
+- Campaigns Gantt; CRM pipeline; media plan → PDF/PPTX + share link
+- Special offers + featured listings
+
+**Exit:** 20 boards → client-ready proposal &lt;10 minutes.
+
+---
+
+## Phase 5 — Transact (Months 10–12) · V3.0 · M16, M17, M30
+
+- Quotes → booking → agreement → e-sign
+- GST invoices + UPI/card (Razorpay/Cashfree) via Edge Functions
+- Campaign portal + auto proof delivery
+- Commission only on marketplace-originated bookings
+
+**Exit:** Money + GST invoice on-platform; leakage instrumented.
+
+---
+
+## Phase 6 — Enterprise ops (Months 13–16) · V4.0 · M18–M22 + agency
+
+- Work orders in Field; leases/utilities; vendors; health score; per-board P&L
+- Agency multi-client workspaces
+
+**Exit:** Tier A/B ops demo without spreadsheets for costs + dispatch.
+
+---
+
+## Phase 7 — Intelligence + network (Months 17–24) · V5.0 · M23–M24, M31, M34–M35
+
+- BI heatmaps; AI pricing suggestions (never auto-apply)
+- Audience estimates; public API; white-label
+
+**Exit:** NRR &gt;115% path; partner API sandbox live.
+
+---
+
+## Production readiness (continuous)
+
+| Gate | When |
+|------|------|
+| RLS + advisors clean | Every migration |
+| Backup / PITR on | Before V1.0 private beta |
+| Staging = Supabase branch or second live project | Before V2.0 |
+| Observability (Sentry + Supabase logs) | V1.0 |
+| DPDP / consent / India residency | Before V2.0 |
+| Pen test + WAF | V2.0 gate |
+
+## What kills the roadmap
+
+- Leaking floor rates, costs, or client names onto public Market paths
+- Writing H360 schema into another company’s Supabase project
+- Skipping `board_faces` or compliance-as-many-records
+- Hardcoding status strings in UI instead of config/state machines
+- Computing availability in two places instead of `occupancy_periods`
+- Blocking Market launch on arbitrary face/owner inventory quotas

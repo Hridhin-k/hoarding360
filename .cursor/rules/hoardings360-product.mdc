@@ -1,0 +1,49 @@
+---
+description: HOARDINGS360 product domain principles — board-centric OOH OS, three-status model, module IDs, Indian formats. Always apply.
+alwaysApply: true
+---
+
+# Product domain (HOARDINGS360)
+
+## What we are building
+
+Three products in one Next.js app:
+
+1. **Marketplace** (`/`, `/boards`) — public advertisers/agencies browse verified listings to place outdoor ads.
+2. **Manage CRM** (`/manage`) — media owners and office staff run inventory, permits, contracts, and publish to Market.
+3. **Field PWA** (`/field`) — tenant field agents do QR / proof / incidents on site (offline-capable).
+
+**ERP (Manage) is the wedge; marketplace is the prize. Supply before demand.**
+Field is the ops arm of each owner tenant — not a public product.
+
+## Domain centre
+
+- Root entity: **board** (structure). Sellable unit: **board_face**.
+- Never delete boards — `retire` with reason. Soft delete everywhere.
+- Client names, floor rates, costs, contract values are **never public**.
+
+## Three status axes (separate badges always)
+
+| Axis | Question | Examples |
+|------|----------|----------|
+| Lifecycle | Usable? | draft, active, maintenance, retired |
+| Compliance | Legal? | valid, expiring_soon, expired, missing |
+| Occupancy | Sold? | vacant, on_hold, booked_future, occupied, blocked |
+
+Expired mandatory clearance → auto-unpublish + block quoting (audited admin override only).
+
+## Signature loop
+
+Agreement end → pre-listing window → `"Available from <date>"` while campaign still live → enquiry/hold → next booking (no vacant flex).
+
+## Roles (hide nav; never show disabled)
+
+Sales sees card rates, **never** floor rates or costs. Technicians see own tasks only.
+
+## Formats
+
+₹ with Indian grouping · `DD-MM-YYYY` · IST business dates · +91 mobiles · paise integers.
+
+## Traceability
+
+No feature without module ID **M01–M35** and version **V0–V5.0**. Prefer Master PRD over investor decks when they conflict.

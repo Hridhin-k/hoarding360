@@ -1,0 +1,12 @@
+---
+description: Points agents to HOARDINGS360 Cursor roadmap and skills; complements Next.js AGENTS.md.
+alwaysApply: true
+---
+
+# Project agent entry
+
+1. Follow `.cursor/rules/roadmap.mdc` for phase order.
+2. Backend = **live Supabase only** (`.cursor/rules/supabase-live.mdc`).
+3. Skills: `h360-ship-feature` · `h360-supabase-migration` · `h360-release-gate`
+4. Setup notes: `docs/CURSOR_SETUP.md`
+5. Still honour root `AGENTS.md` Next.js version guidance before coding framework APIs.

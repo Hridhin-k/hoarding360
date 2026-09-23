@@ -1,0 +1,34 @@
+---
+description: SQL and migration conventions when editing supabase/migrations or Edge Functions.
+globs: supabase/**/*
+alwaysApply: false
+---
+
+# Migrations & Edge Functions
+
+## Migrations
+
+1. One concern per file: `YYYYMMDDHHMMSS_description.sql`
+2. Reversible where possible; never destructive without user confirm
+3. Create reserved V4 tables empty early (campaigns, leases, work_orders, vendors, expenses)
+4. Indexes: GiST on board location; btree on `(tenant_id, …)` hot filters
+5. After apply: `list_tables` + `get_advisors`
+
+## RLS template
+
+```sql
+alter table public.boards enable row level security;
+
+create policy boards_tenant_select on public.boards
+  for select using (
+    tenant_id in (
+      select tenant_id from public.tenant_members
+      where user_id = auth.uid() and deactivated_at is null
+    )
+  );
+```
+
+## Edge Functions (live deploy)
+
+Use for: occupancy recompute, marketplace projection refresh, WhatsApp/SMS, payment webhooks, PDF proof packs.  
+Idempotent consumers; include `tenant_id` in every payload; never trust client `tenant_id` without membership check.

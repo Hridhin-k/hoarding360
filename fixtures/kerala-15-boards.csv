@@ -1,0 +1,20 @@
+board_code,name,structure_type,city,district,state,pin_code,address_line,landmark,road_name,lat,lng,face_label,width_ft,height_ft,illumination,facing_direction,card_rate_rupees
+KL-TVM-0001,Statues Junction Hoarding,hoarding,Thiruvananthapuram,Thiruvananthapuram,Kerala,695001,Near Statues Junction,Secretariat,MG Road,8.4875,76.9525,A,40,20,frontlit,North,75000
+KL-TVM-0001,Statues Junction Hoarding,hoarding,Thiruvananthapuram,Thiruvananthapuram,Kerala,695001,Near Statues Junction,Secretariat,MG Road,8.4875,76.9525,B,40,20,frontlit,South,70000
+KL-TVM-0002,Kazhakkoottam Unipole,unipole,Thiruvananthapuram,Thiruvananthapuram,Kerala,695582,NH Bypass Kazhakkoottam,Technopark Phase 1,NH 66,8.5562,76.8778,A,30,15,backlit,East,55000
+KL-KLM-0003,Chinnakada Circle Board,hoarding,Kollam,Kollam,Kerala,691001,Chinnakada Junction,Railway Station Road,Chinnakada,8.8932,76.6141,A,40,20,frontlit,West,48000
+KL-ALP-0004,Iron Bridge Hoarding,hoarding,Alappuzha,Alappuzha,Kerala,688011,Near Iron Bridge,Boat Jetty,NH 66,9.4981,76.3388,A,36,18,frontlit,North,42000
+KL-KTM-0005,Collectorate Junction Unipole,unipole,Kottayam,Kottayam,Kerala,686002,Collectorate Junction,District Hospital Road,MC Road,9.5916,76.5222,A,30,15,backlit,South,45000
+KL-KTM-0005,Collectorate Junction Unipole,unipole,Kottayam,Kottayam,Kerala,686002,Collectorate Junction,District Hospital Road,MC Road,9.5916,76.5222,B,30,15,nonlit,North,38000
+KL-EKM-0006,MG Road Metro Hoarding,hoarding,Kochi,Ernakulam,Kerala,682011,MG Road near Maharajas Metro,MG Road Metro Station,MG Road,9.9740,76.2850,A,50,25,frontlit,East,120000
+KL-EKM-0006,MG Road Metro Hoarding,hoarding,Kochi,Ernakulam,Kerala,682011,MG Road near Maharajas Metro,MG Road Metro Station,MG Road,9.9740,76.2850,B,50,25,frontlit,West,110000
+KL-EKM-0007,Edappally Signal Board,hoarding,Kochi,Ernakulam,Kerala,682024,Edappally Junction,Lulu Mall approach,NH 66,10.0261,76.3086,A,40,20,backlit,North,95000
+KL-EKM-0008,Vyttila Mobility Hub Unipole,unipole,Kochi,Ernakulam,Kerala,682019,Vyttila Hub entrance,Vyttila Mobility Hub,SA Road,9.9669,76.3180,A,30,20,frontlit,South,85000
+KL-TSR-0009,Swaraj Round Hoarding,hoarding,Thrissur,Thrissur,Kerala,680001,Near Swaraj Round,Vadakkumnathan Temple,Round South,10.5276,76.2144,A,40,20,frontlit,East,60000
+KL-TSR-0010,Punkunnam Railway Board,hoarding,Thrissur,Thrissur,Kerala,680002,Punkunnam Junction,Punkunnam Railway Station,Shoranur Road,10.5390,76.2005,A,36,18,nonlit,West,40000
+KL-PKD-0011,Olympic Junction Unipole,unipole,Palakkad,Palakkad,Kerala,678001,Olympic Junction,Stadium Bus Stand,Shoranur Road,10.7867,76.6548,A,30,15,frontlit,North,38000
+KL-MLP-0012,Kottakkal Bypass Hoarding,hoarding,Malappuram,Malappuram,Kerala,676503,Kottakkal Bypass,Arya Vaidya Sala approach,NH 66,11.0019,76.0041,A,40,20,frontlit,South,52000
+KL-KKD-0013,Mavoor Road Hoarding,hoarding,Kozhikode,Kozhikode,Kerala,673016,Mavoor Road Junction,Medical College,Mavoor Road,11.2700,75.8360,A,40,20,backlit,East,70000
+KL-KKD-0013,Mavoor Road Hoarding,hoarding,Kozhikode,Kozhikode,Kerala,673016,Mavoor Road Junction,Medical College,Mavoor Road,11.2700,75.8360,B,40,20,frontlit,West,65000
+KL-KKD-0014,Ramanattukara Toll Unipole,unipole,Kozhikode,Kozhikode,Kerala,673633,Near Ramanattukara Toll,Calicut University Road,NH 66,11.1790,75.8670,A,30,15,frontlit,North,58000
+KL-KNR-0015,Caltex Junction Board,hoarding,Kannur,Kannur,Kerala,670002,Caltex Junction,SN Park,Beach Road,11.8745,75.3704,A,40,20,frontlit,South,48000

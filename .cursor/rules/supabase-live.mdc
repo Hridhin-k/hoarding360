@@ -1,0 +1,63 @@
+---
+description: Live Supabase-only backend rules for HOARDINGS360. Never use local Supabase; never write to non-H360 projects.
+alwaysApply: true
+---
+
+# Live Supabase only
+
+## Linked project (this repo)
+
+| Field | Value |
+|-------|-------|
+| Name | `harding` |
+| Ref | `bzgdutrmehuojindfyxi` |
+| URL | `https://bzgdutrmehuojindfyxi.supabase.co` |
+| CLI | `supabase link --project-ref bzgdutrmehuojindfyxi` (already done) |
+
+All migrations and Edge Functions target **this** live project only.
+
+## Allowed
+
+- Migrations in `supabase/migrations/*.sql` via `supabase db push` or MCP against `bzgdutrmehuojindfyxi`
+- Edge Functions in `supabase/functions/` deployed to this live project
+- Supabase Preview Branches for risky experiments — still cloud, not local Docker
+
+## Forbidden
+
+- `supabase start` / local Docker Postgres for this app
+- Applying H360 DDL to any other Supabase project (Folio, StudioBoard, Badger, nuhome, invoicing, etc.)
+- Service role key in client bundles
+- Disabling RLS “temporarily”
+- Hard deletes of boards, agreements, permits, documents
+
+## Schema conventions
+
+```sql
+-- every business table
+tenant_id uuid not null references tenants(id),
+-- money
+amount_paise bigint not null,
+-- geo
+location geography(Point, 4326) not null,
+-- soft delete
+deleted_at timestamptz, deleted_by uuid, deletion_reason text
+```
+
+- Live schema uses **`organizations`** / **`organization_members`** (tenant boundary), not a table named `tenants`
+- Enable RLS on every org-scoped table; policy from `auth.uid()` membership
+- Compliance = **many** `compliance_records` per board, status **computed**
+- Occupancy = materialised `occupancy_periods` from agreements
+- Documents = one polymorphic table + Storage objects
+- After migrations: `supabase db advisors --linked` or MCP advisors
+
+## Clients in Next.js
+
+| File | Key | Use |
+|------|-----|-----|
+| `lib/supabase/browser.ts` | anon | Client components |
+| `lib/supabase/server.ts` | anon + cookies | Server Components / actions |
+| `lib/supabase/admin.ts` | service role | Server-only Route Handlers / jobs |
+
+## Env
+
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only). Never commit `.env.local`.

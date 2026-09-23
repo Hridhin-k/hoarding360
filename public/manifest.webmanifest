@@ -1,0 +1,18 @@
+{
+  "name": "HOARDINGS360 Field",
+  "short_name": "H360 Field",
+  "description": "Field PWA for proof of display and incidents",
+  "start_url": "/field",
+  "scope": "/field",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
