@@ -10,19 +10,22 @@ const highlights = [
     tone: "available" as const,
     title: "Available now",
     body: "Vacant faces you can shortlist for a campaign today.",
-    band: "bg-[var(--google-green)] text-white",
+    mark: "bg-[var(--google-green)]",
+    count: "text-[var(--google-green)]",
   },
   {
     tone: "upcoming" as const,
     title: "Opening soon",
     body: "Still on a live campaign — free from a known date.",
-    band: "bg-[var(--google-yellow)] text-[var(--text-primary)]",
+    mark: "bg-[var(--google-yellow)]",
+    count: "text-[var(--text-primary)]",
   },
   {
     tone: "held" as const,
     title: "On hold / booked",
     body: "Not open to enquire — shown so you don’t chase a dead board.",
-    band: "bg-[var(--google-red)] text-white",
+    mark: "bg-[var(--google-red)]",
+    count: "text-[var(--google-red)]",
   },
 ];
 
@@ -70,22 +73,31 @@ export default async function MarketHomePage() {
           </Link>
         </div>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {highlights.map((item) => (
-            <Link
-              key={item.tone}
-              href="/boards"
-              className="overflow-hidden rounded-xl border border-[var(--border)] bg-white hover:bg-[var(--surface)]"
-            >
-              <div className={`px-5 py-4 ${item.band}`}>
-                <p className="text-3xl font-medium">{counts[item.tone]}</p>
-                <h2 className="mt-1 text-base font-medium">{item.title}</h2>
-              </div>
-              <p className="px-5 py-4 text-sm leading-relaxed text-[var(--text-secondary)]">
-                {item.body}
-              </p>
-            </Link>
-          ))}
+        <div className="mt-10 overflow-hidden rounded-xl border border-[var(--border)] bg-white">
+          <div className="grid sm:grid-cols-3">
+            {highlights.map((item, index) => (
+              <Link
+                key={item.tone}
+                href="/boards"
+                className={`flex gap-4 px-5 py-5 hover:bg-[var(--surface)] ${
+                  index > 0 ? "border-t border-[var(--border)] sm:border-t-0 sm:border-l" : ""
+                }`}
+              >
+                <span className={`mt-1 h-8 w-1 shrink-0 rounded-full ${item.mark}`} aria-hidden />
+                <span className="min-w-0">
+                  <span className={`block text-3xl font-medium leading-none ${item.count}`}>
+                    {counts[item.tone]}
+                  </span>
+                  <span className="mt-3 block text-sm font-medium text-[var(--text-primary)]">
+                    {item.title}
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-[var(--text-secondary)]">
+                    {item.body}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
